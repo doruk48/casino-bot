@@ -152,14 +152,12 @@ LOG_FILE = "casinibot.log"
 # Rulet multiplier'ları
 ROULETTE_MULTIPLIERS = {"red": 2, "black": 2, "green": 72, "number": 36}  
 
-# Telefonun dahili depolama yolu
-INTERNAL_STORAGE = "/storage/emulated/0"
 
 # Rulet görsel klasörü
-ROULETTE_IMG_PATH = os.path.join(INTERNAL_STORAGE, "Rulettt")
+ROULETTE_IMG_PATH = ""
 
 # Blackjack görsel klasörü
-BLACKJACK_IMG_PATH = os.path.join(INTERNAL_STORAGE, "Blackjack")
+BLACKJACK_IMG_PATH = ""
 
 WHEEL_SEGMENTS = [
     # PASS - 10 dilim (%40)
@@ -833,7 +831,7 @@ from datetime import datetime
 import os
 import re
 
-TRANSFER_TEMPLATE_PATH = "/storage/emulated/0/balance/transfer.png"
+TRANSFER_TEMPLATE_PATH = ""
 
 def clean_name(name: str) -> str:
     """Sadece harf, rakam ve boşluk bırak"""
@@ -1188,18 +1186,16 @@ def format_number_with_emoji(number: int) -> str:
 
 def get_roulette_image(number: int) -> str:
     """Rulet sonucuna göre görsel dosya yolunu döndürür"""
-    YENI_RULET_PATH = "/storage/emulated/0/Yenirulet"
-    
+    # Görseller ana klasörde olduğu için doğrudan dosya adını kullan
     if number == 0:
-        img_path = os.path.join(YENI_RULET_PATH, "0.jpg")
+        img_path = "0.jpg"
     else:
-        img_path = os.path.join(YENI_RULET_PATH, f"{number}.jpg")
+        img_path = f"{number}.jpg"
     
     # Görsel yoksa spin.jpg kullan
     if not os.path.exists(img_path):
-        spin_path = os.path.join(YENI_RULET_PATH, "spin.jpg")
-        if os.path.exists(spin_path):
-            img_path = spin_path
+        if os.path.exists("spin.jpg"):
+            img_path = "spin.jpg"
     
     return img_path
 
@@ -1870,11 +1866,12 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
 
-ACIK_KART_PATH = "/storage/emulated/0/Rulet/acik.jpg"
-KAPALI_KART_PATH = "/storage/emulated/0/Rulet/kapali.jpg"
+# Görseller ana klasörde olduğu için doğrudan dosya adı
+ACIK_KART_PATH = "acik.jpg"
+KAPALI_KART_PATH = "kapali.jpg"
 
 def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
-    """Açık kart görseline sonuçları yaz - ANDROID FONT"""
+    """Açık kart görseline sonuçları yaz"""
     
     if not os.path.exists(ACIK_KART_PATH):
         raise Exception(f"Açık kart görseli bulunamadı: {ACIK_KART_PATH}")
@@ -2249,20 +2246,35 @@ from PIL import Image
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import ContextTypes
 
-RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-SUITS = ["♠️", "♥️", "♦️", "♣️"]
-BJ_IMG_PATH = "/storage/emulated/0/Blackjack"
-CARD_WIDTH = 60
-CARD_HEIGHT = 84
-_bj: Dict[int, dict] = {}
+# Tüm görseller ana klasörde olduğu için boş
+BJ_IMG_PATH = ""
+YENI_RULET_PATH = ""
 
+# Tekil görseller
+ACIK_KART_PATH = "acik.jpg"
+KAPALI_KART_PATH = "kapali.jpg"
 
+# Rulet fonksiyonu
+def get_roulette_image(number: int) -> str:
+    if number == 0:
+        img_path = "0.jpg"
+    else:
+        img_path = f"{number}.jpg"
+    
+    if not os.path.exists(img_path):
+        if os.path.exists("spin.jpg"):
+            img_path = "spin.jpg"
+    
+    return img_path
+
+# Blackjack fonksiyonu
 def get_card_image(card: tuple) -> Image.Image:
     rank, suit = card
     rank_map = {"A": "ace", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9", "10": "10", "J": "jack", "Q": "queen", "K": "king"}
     suit_map = {"♠️": "spades", "♥️": "hearts", "♦️": "diamonds", "♣️": "clubs"}
     filename = f"{rank_map.get(rank, rank)}_of_{suit_map.get(suit, 'spades')}.png"
-    img_path = os.path.join(BJ_IMG_PATH, filename)
+    img_path = filename  # Doğrudan dosya adı
+    
     if os.path.exists(img_path):
         img = Image.open(img_path)
         img = img.resize((CARD_WIDTH, CARD_HEIGHT), Image.Resampling.LANCZOS)
