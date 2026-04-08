@@ -831,7 +831,7 @@ from datetime import datetime
 import os
 import re
 
-TRANSFER_TEMPLATE_PATH = ""
+TRANSFER_TEMPLATE_PATH = "transfer.png"
 
 def clean_name(name: str) -> str:
     """Sadece harf, rakam ve boşluk bırak"""
@@ -850,7 +850,7 @@ async def get_display_name(uid: int) -> str:
 
 
 def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO:
-    """Profesyonel transfer görseli - EMOJİSİZ"""
+    """Profesyonel transfer görseli"""
     
     if not os.path.exists(TRANSFER_TEMPLATE_PATH):
         raise Exception(f"Transfer görseli bulunamadı: {TRANSFER_TEMPLATE_PATH}")
@@ -861,16 +861,11 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
     txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(txt_layer)
     
-    # ==================== FONT AYARLARI (KALIN) ====================
+    # ==================== RENDER'DA VAR OLAN FONTLAR ====================
     font_paths = [
-        "/storage/emulated/0/fonts/PlayfairDisplay-Bold.ttf",
-        "/storage/emulated/0/fonts/PlayfairDisplay-Black.ttf",
-        "/storage/emulated/0/fonts/Cinzel-Bold.ttf",
-        "/storage/emulated/0/fonts/Cinzel-Black.ttf",
-        "/storage/emulated/0/fonts/LibreBaskerville-Bold.ttf",
-        "/system/fonts/Roboto-Bold.ttf",
-        "/system/fonts/Roboto-Black.ttf",
-        "/system/fonts/Roboto-Regular.ttf"
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf"
     ]
     
     font_isim = None
@@ -891,6 +886,7 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
         font_isim = font_miktar = font_token = ImageFont.load_default()
         print("⚠️ Font bulunamadı, default kullanılıyor")
     
+    # ... devam eden kod (yazı yazma kısmı) ...
     # ==================== KOORDİNATLAR ====================
     scale_x = width / 1024
     scale_y = height / 700
@@ -1871,24 +1867,20 @@ ACIK_KART_PATH = "acik.jpg"
 KAPALI_KART_PATH = "kapali.jpg"
 
 def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
-    """Açık kart görseline sonuçları yaz"""
-    
     if not os.path.exists(ACIK_KART_PATH):
         raise Exception(f"Açık kart görseli bulunamadı: {ACIK_KART_PATH}")
     
     img = Image.open(ACIK_KART_PATH)
     draw = ImageDraw.Draw(img)
     
-    # ANDROID FONT YOLLARI (sırayla dene)
+    # Render'da VAR olan font yolları
     font_paths = [
-        "/system/fonts/Roboto-Bold.ttf",
-        "/system/fonts/Roboto-Regular.ttf",
-        "/storage/emulated/0/fonts/Roboto-Bold.ttf",
-        "/storage/emulated/0/fonts/arial.ttf"
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
     ]
     
     font = None
-    font_size = 160  # BÜYÜK FONT
+    font_size = 160
     
     for path in font_paths:
         try:
@@ -1899,8 +1891,10 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
             continue
     
     if font is None:
-        print("⚠️ Font bulunamadı, default kullanılıyor (küçük olabilir)")
+        print("⚠️ Font bulunamadı, default kullanılıyor")
         font = ImageFont.load_default()
+    
+    # ... devamı
     
     # KUTU KOORDİNATLARI (image_4.png için)
     boxes = [
@@ -2246,34 +2240,20 @@ from PIL import Image
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import ContextTypes
 
-# Tüm görseller ana klasörde olduğu için boş
-BJ_IMG_PATH = ""
-YENI_RULET_PATH = ""
+RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+SUITS = ["♠️", "♥️", "♦️", "♣️"]
+BJ_IMG_PATH = ""  # ✅ TELEFON YOLU SİLİNDİ, ANA KLASÖR
+CARD_WIDTH = 60
+CARD_HEIGHT = 84
+_bj: Dict[int, dict] = {}
 
-# Tekil görseller
-ACIK_KART_PATH = "acik.jpg"
-KAPALI_KART_PATH = "kapali.jpg"
 
-# Rulet fonksiyonu
-def get_roulette_image(number: int) -> str:
-    if number == 0:
-        img_path = "0.jpg"
-    else:
-        img_path = f"{number}.jpg"
-    
-    if not os.path.exists(img_path):
-        if os.path.exists("spin.jpg"):
-            img_path = "spin.jpg"
-    
-    return img_path
-
-# Blackjack fonksiyonu
 def get_card_image(card: tuple) -> Image.Image:
     rank, suit = card
     rank_map = {"A": "ace", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9", "10": "10", "J": "jack", "Q": "queen", "K": "king"}
     suit_map = {"♠️": "spades", "♥️": "hearts", "♦️": "diamonds", "♣️": "clubs"}
     filename = f"{rank_map.get(rank, rank)}_of_{suit_map.get(suit, 'spades')}.png"
-    img_path = filename  # Doğrudan dosya adı
+    img_path = filename  # ✅ Doğrudan dosya adı
     
     if os.path.exists(img_path):
         img = Image.open(img_path)
@@ -2283,7 +2263,7 @@ def get_card_image(card: tuple) -> Image.Image:
 
 
 def get_face_down_card() -> Image.Image:
-    back_path = os.path.join(BJ_IMG_PATH, "back.png")
+    back_path = "back.png"  # ✅ Telefon yolu silindi
     if os.path.exists(back_path):
         img = Image.open(back_path)
         img = img.resize((CARD_WIDTH, CARD_HEIGHT), Image.Resampling.LANCZOS)
