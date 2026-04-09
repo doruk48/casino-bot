@@ -1894,7 +1894,28 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
         print("⚠️ Font bulunamadı, default kullanılıyor")
         font = ImageFont.load_default()
     
-    # ... devamı
+    # ============ DEVAMI (BURADAN İTİBAREN EKLEDİM) ============
+    
+    # Kazanç yazısı
+    text = f"{winner_mult} KAT"
+    
+    # Yazıyı ortala
+    bbox = draw.textbbox((0, 0), text, font=font)
+    w = bbox[2] - bbox[0]
+    h = bbox[3] - bbox[1]
+    x = (img.width - w) // 2
+    y = (img.height - h) // 2
+    
+    # Yazıyı çiz
+    draw.text((x, y), text, fill="gold", font=font)
+    
+    # Resmi byte'a çevir
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+    
+    return img_byte_arr
+    
     
     # KUTU KOORDİNATLARI (image_4.png için)
     boxes = [
