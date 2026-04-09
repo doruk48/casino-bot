@@ -1864,7 +1864,7 @@ from telegram.ext import ContextTypes
 
 # Görseller ana klasörde olduğu için doğrudan dosya adı
 ACIK_KART_PATH = "acik.jpg"
-KAPALI_KART_PATH = "kapali.jpg"
+KAPALI_KART_PATH = "Kapali.jpg"
 
 def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     if not os.path.exists(ACIK_KART_PATH):
