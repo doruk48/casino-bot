@@ -2973,39 +2973,15 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="HTML"
         )
-# ═══════════════════════════════════════════════════════════════
-#  BACKUP
-# ═══════════════════════════════════════════════════════════════
 
-async def backup_task():
-async def backup_task():
-    os.makedirs(BACKUP_DIR, exist_ok=True)
-    try:
-        while True:
-            await asyncio.sleep(24 * 3600)
-            try:
-                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                dest = os.path.join(BACKUP_DIR, f"casinibot_{ts}.db")
-                shutil.copy2(DATABASE_PATH, dest)
-                logger.info(f"Backup: {dest}")
-                backups = sorted(os.listdir(BACKUP_DIR), reverse=True)
-                for old in backups[7:]:
-                    os.remove(os.path.join(BACKUP_DIR, old))
-            except Exception as e:
-                logger.error(f"Backup hata: {e}")
-    except asyncio.CancelledError:
-        logger.info("Backup görevi durduruldu")
-        raise
 
 # ═══════════════════════════════════════════════════════════════
 #  ANA FONKSIYON
 # ═══════════════════════════════════════════════════════════════
-
 async def post_init(app):
     await init_db()
     # backup_task'i KALDIRDIK, sadece veritabanını başlat
     logger.info("🎰 CasiniBot başlatıldı!")
-
 
 async def post_shutdown(app):
     global _db
