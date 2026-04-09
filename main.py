@@ -3003,18 +3003,9 @@ async def backup_task():
 
 async def post_init(app):
     await init_db()
-    # Yedekleme görevini başlat ve app nesnesine kaydet
-    app.bot_data["backup_task"] = asyncio.create_task(backup_task())
+    # backup_task'i KALDIRDIK, sadece veritabanını başlat
     logger.info("🎰 CasiniBot başlatıldı!")
 
-async def post_shutdown(app):
-    global _db
-    # Yedekleme görevini iptal et
-    if "backup_task" in app.bot_data:
-        app.bot_data["backup_task"].cancel()
-    if _db:
-        await _db.close()
-    logger.info("CasiniBot kapatıldı.")
 
 async def post_shutdown(app):
     global _db
@@ -3033,7 +3024,7 @@ def main():
         .post_init(post_init)
         .post_shutdown(post_shutdown)
         .build()
-    )
+			)
     
     # Admin komutları
     app.add_handler(CommandHandler("addbalance", cmd_addbalance))
