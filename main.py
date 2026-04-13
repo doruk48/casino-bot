@@ -13,10 +13,10 @@ from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorClient
 from typing import Dict, List, Tuple
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, LabeledPrice
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, LabeledPrice, SuccessfulPayment
 from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler, ContextTypes,
-    PreCheckoutQueryHandler, MessageHandler, filters, SuccessfulPayment
+    PreCheckoutQueryHandler, MessageHandler, filters
 )
 from telegram.error import BadRequest
 
