@@ -42,11 +42,22 @@ LOG_FILE = "casinibot.log"
 MAX_SAFE_BALANCE = 10**60
 WARNING_LIMIT = 10**58
 
+# # Görsel yolları (Tüm görseller ana klasörde)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Rulet
 ROULETTE_MULTIPLIERS = {"red": 2, "black": 2, "green": 72, "number": 36}
-INTERNAL_STORAGE = "/storage/emulated/0"
-ROULETTE_IMG_PATH = os.path.join(INTERNAL_STORAGE, "Rulettt")
-BLACKJACK_IMG_PATH = os.path.join(INTERNAL_STORAGE, "Blackjack")
+ROULETTE_IMG_PATH = BASE_DIR  # 0.jpg, 1.jpg, spin.jpg burada
+
+# Blackjack (kart görselleri ana klasörde)
+BLACKJACK_IMG_PATH = BASE_DIR  # ace_of_hearts.png, king_of_spades.png, back.png burada
+
+# Kazı Kazan
+KAPALI_KART_PATH = os.path.join(BASE_DIR, "kapali.jpg")
+ACIK_KART_PATH = os.path.join(BASE_DIR, "acik.jpg")
+
+# Transfer
+TRANSFER_TEMPLATE_PATH = os.path.join(BASE_DIR, "transfer.png")
 
 # Çarkıfelek
 WHEEL_SEGMENTS = [
@@ -812,14 +823,11 @@ def get_rank_emoji(rank: int) -> str:
         return "📍"
 
 def get_roulette_image(number: int) -> str:
-    YENI_RULET_PATH = "/storage/emulated/0/Yenirulet"
-    if number == 0:
-        img_path = os.path.join(YENI_RULET_PATH, "0.jpg")
-    else:
-        img_path = os.path.join(YENI_RULET_PATH, f"{number}.jpg")
+    # Görseller ana klasörde (BASE_DIR)
+    img_path = os.path.join(BASE_DIR, f"{number}.jpg")
     
     if not os.path.exists(img_path):
-        spin_path = os.path.join(YENI_RULET_PATH, "spin.jpg")
+        spin_path = os.path.join(BASE_DIR, "spin.jpg")
         if os.path.exists(spin_path):
             img_path = spin_path
     return img_path
@@ -1087,13 +1095,9 @@ def get_card_image(card: tuple) -> Image.Image:
     rank_map = {"A": "ace", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9", "10": "10", "J": "jack", "Q": "queen", "K": "king"}
     suit_map = {"♠️": "spades", "♥️": "hearts", "♦️": "diamonds", "♣️": "clubs"}
     filename = f"{rank_map.get(rank, rank)}_of_{suit_map.get(suit, 'spades')}.png"
-    img_path = os.path.join(BJ_IMG_PATH, filename)
-    if os.path.exists(img_path):
-        img = Image.open(img_path)
-        img = img.resize((CARD_WIDTH, CARD_HEIGHT), Image.Resampling.LANCZOS)
-        return img
-    return Image.new('RGB', (CARD_WIDTH, CARD_HEIGHT), color='#2c2c2c')
-
+    # 🔧 DÜZELT: BASE_DIR ile birleştir
+    img_path = os.path.join(BASE_DIR, filename)
+    # ...
 def get_face_down_card() -> Image.Image:
     back_path = os.path.join(BJ_IMG_PATH, "back.png")
     if os.path.exists(back_path):
