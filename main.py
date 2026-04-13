@@ -1093,9 +1093,13 @@ def get_card_image(card: tuple) -> Image.Image:
     rank_map = {"A": "ace", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9", "10": "10", "J": "jack", "Q": "queen", "K": "king"}
     suit_map = {"♠️": "spades", "♥️": "hearts", "♦️": "diamonds", "♣️": "clubs"}
     filename = f"{rank_map.get(rank, rank)}_of_{suit_map.get(suit, 'spades')}.png"
-    # 🔧 DÜZELT: BASE_DIR ile birleştir
     img_path = os.path.join(BASE_DIR, filename)
-    # ...
+    
+    if os.path.exists(img_path):
+        img = Image.open(img_path)
+        img = img.resize((CARD_WIDTH, CARD_HEIGHT), Image.Resampling.LANCZOS)
+        return img
+    return Image.new('RGB', (CARD_WIDTH, CARD_HEIGHT), color='#2c2c2c')
 def get_face_down_card() -> Image.Image:
     back_path = os.path.join(BJ_IMG_PATH, "back.png")
     if os.path.exists(back_path):
