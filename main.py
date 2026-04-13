@@ -17,6 +17,10 @@ from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler, ContextTypes,
     PreCheckoutQueryHandler, MessageHandler, filters
 )
+from telegram.ext import (
+    Application, CommandHandler, CallbackQueryHandler, ContextTypes,
+    PreCheckoutQueryHandler, MessageHandler, filters, SuccessfulPaymentHandler
+)
 from telegram.error import BadRequest
 from PIL import Image, ImageDraw, ImageFont
 import io
