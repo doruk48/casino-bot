@@ -1627,7 +1627,7 @@ async def _dice_calculate_results(ctx, chat_id, game_id):
     await ctx.bot.send_message(chat_id, "\n".join(lines), parse_mode="HTML")
     
     await finish_game(chat_id, game_id, f"max:{max_score}")
-    awawait cleanup(chat_id)
+    await cleanup(chat_id)
     
     
 # ═══════════════════════════════════════════════════════════════
