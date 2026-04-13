@@ -632,12 +632,10 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         "/blackjack — Başlat | /bj — Bahis\n\n"
         "💰 <b>SATIN AL</b>\n"
         "/buy — Telegram Stars ile oyun parası satın al\n\n"
-        "💡 Miktar yerine <code>allin</code> yazarak tüm bakiyeni yatırabilirsin!",
-        parse_mode="HTML"
+        "💡 Miktar yerine <code>allin</code> yazarak tüm bakiyeni yatırabilirsin!"
     )
     
     await update.message.reply_text(help_text, parse_mode="HTML")
-
 # ═══════════════════════════════════════════════════════════════
 #  GÜNLÜK BONUS
 # ═══════════════════════════════════════════════════════════════
