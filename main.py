@@ -2556,7 +2556,7 @@ def main():
     app.add_handler(CommandHandler("buy", cmd_buy))
     app.add_handler(CallbackQueryHandler(buy_callback, pattern=r"^buy_"))
     app.add_handler(PreCheckoutQueryHandler(pre_checkout_callback))
-    app.add_handler(SuccessfulPayment(successful_payment_callback))
+    app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment_callback))
     
     # Rulet
     app.add_handler(CommandHandler("rulet", cmd_rulet))
