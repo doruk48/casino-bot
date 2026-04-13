@@ -11,7 +11,7 @@ from datetime import datetime
 
 # MongoDB imports (SQLite yerine)
 from motor.motor_asyncio import AsyncIOMotorClient
-
+from typing import Dict, List, Tuple
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, LabeledPrice
 from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler, ContextTypes,
