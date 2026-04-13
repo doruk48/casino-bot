@@ -2535,63 +2535,63 @@ def main():
     )
     
     # Admin komutları
-app.add_handler(CommandHandler("addbalance", cmd_addbalance))
-app.add_handler(CommandHandler("setbalance", cmd_setbalance))
-app.add_handler(CommandHandler("cleanup", cmd_cleanup))
-app.add_handler(CommandHandler("stats", cmd_stats))
-app.add_handler(CommandHandler("reklam", cmd_reklam))
-app.add_handler(CommandHandler("id", cmd_id))
+    app.add_handler(CommandHandler("addbalance", cmd_addbalance))
+    app.add_handler(CommandHandler("setbalance", cmd_setbalance))
+    app.add_handler(CommandHandler("cleanup", cmd_cleanup))
+    app.add_handler(CommandHandler("stats", cmd_stats))
+    app.add_handler(CommandHandler("reklam", cmd_reklam))
+    app.add_handler(CommandHandler("id", cmd_id))
+    
+    # Genel komutlar
+    app.add_handler(CommandHandler("start", cmd_start))
+    app.add_handler(CommandHandler("balance", cmd_balance))
+    app.add_handler(CommandHandler("leaderboard", cmd_leaderboard))
+    app.add_handler(CommandHandler("moneys", cmd_moneys))
+    app.add_handler(CommandHandler("changename", cmd_changename))
+    app.add_handler(CommandHandler("help", cmd_help))
+    app.add_handler(CommandHandler("daily", cmd_daily))
+    app.add_handler(CommandHandler("menu", cmd_menu))
+    
+    # VIP Kasa
+    app.add_handler(CommandHandler("buy", cmd_buy))
+    app.add_handler(CallbackQueryHandler(buy_callback, pattern=r"^buy_"))
+    app.add_handler(PreCheckoutQueryHandler(pre_checkout_callback))
+    app.add_handler(SuccessfulPayment(successful_payment_callback))
+    
+    # Rulet
+    app.add_handler(CommandHandler("rulet", cmd_rulet))
+    app.add_handler(CommandHandler("green", cmd_green))
+    app.add_handler(CommandHandler("red", cmd_red))
+    app.add_handler(CommandHandler("black", cmd_black))
+    app.add_handler(CommandHandler("number", cmd_number))
+    app.add_handler(CommandHandler("numbers", cmd_numbers))
+    
+    # Zar
+    app.add_handler(CommandHandler("dicebet", cmd_dicebet))
+    app.add_handler(CommandHandler("dice", cmd_dice))
+    app.add_handler(CallbackQueryHandler(dice_roll_callback, pattern=r"^dice_roll:"))
+    
+    # Çark
+    app.add_handler(CommandHandler("wheelbet", cmd_wheelbet))
+    app.add_handler(CommandHandler("wheel", cmd_wheel))
+    
+    # Kazı Kazan
+    app.add_handler(CommandHandler("kazisolo", cmd_kazisolo))
+    app.add_handler(CommandHandler("kazibet", cmd_kazibet))
+    app.add_handler(CommandHandler("kazi", cmd_kazi))
+    
+    # Blackjack
+    app.add_handler(CommandHandler("blackjack", cmd_blackjack))
+    app.add_handler(CommandHandler("bj", cmd_bj))
+    app.add_handler(CallbackQueryHandler(bj_callback, pattern=r"^bj_(hit|stand):"))
+    
+    # Menü
+    app.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^menu_"))
+    
+    logger.info("🚀 Handler'lar yüklendi. Polling başlıyor...")
+    app.run_polling(drop_pending_updates=True, allowed_updates=["message", "callback_query", "pre_checkout_query"])
 
-# Genel komutlar
-app.add_handler(CommandHandler("start", cmd_start))
-app.add_handler(CommandHandler("balance", cmd_balance))
-app.add_handler(CommandHandler("leaderboard", cmd_leaderboard))
-app.add_handler(CommandHandler("moneys", cmd_moneys))
-app.add_handler(CommandHandler("changename", cmd_changename))
-app.add_handler(CommandHandler("help", cmd_help))
-app.add_handler(CommandHandler("daily", cmd_daily))
-app.add_handler(CommandHandler("menu", cmd_menu))
-
-# VIP Kasa (Stars ile satın alma)
-app.add_handler(CommandHandler("buy", cmd_buy))
-app.add_handler(CallbackQueryHandler(buy_callback, pattern=r"^buy_"))
-app.add_handler(PreCheckoutQueryHandler(pre_checkout_callback))
-app.add_handler(SuccessfulPayment(successful_payment_callback))  # ✅ Doğru, tek
-
-# Rulet
-app.add_handler(CommandHandler("rulet", cmd_rulet))
-app.add_handler(CommandHandler("green", cmd_green))
-app.add_handler(CommandHandler("red", cmd_red))
-app.add_handler(CommandHandler("black", cmd_black))
-app.add_handler(CommandHandler("number", cmd_number))
-app.add_handler(CommandHandler("numbers", cmd_numbers))
-
-# Zar
-app.add_handler(CommandHandler("dicebet", cmd_dicebet))
-app.add_handler(CommandHandler("dice", cmd_dice))
-app.add_handler(CallbackQueryHandler(dice_roll_callback, pattern=r"^dice_roll:"))
-
-# Çark
-app.add_handler(CommandHandler("wheelbet", cmd_wheelbet))
-app.add_handler(CommandHandler("wheel", cmd_wheel))
-
-# Kazı Kazan
-app.add_handler(CommandHandler("kazisolo", cmd_kazisolo))
-app.add_handler(CommandHandler("kazibet", cmd_kazibet))
-app.add_handler(CommandHandler("kazi", cmd_kazi))
-
-# Blackjack
-app.add_handler(CommandHandler("blackjack", cmd_blackjack))
-app.add_handler(CommandHandler("bj", cmd_bj))
-app.add_handler(CallbackQueryHandler(bj_callback, pattern=r"^bj_(hit|stand):"))
-
-# Menü
-app.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^menu_"))
-
-logger.info("🚀 Handler'lar yüklendi. Polling başlıyor...")
-app.run_polling(drop_pending_updates=True, allowed_updates=["message", "callback_query", "pre_checkout_query"])
 
 if __name__ == "__main__":
     main()
-	
-
+    
