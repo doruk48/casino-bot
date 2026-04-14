@@ -2416,7 +2416,7 @@ async def cmd_id(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Admin komutu - Bot istatistikleri"""
     user = update.effective_user
     
@@ -2813,7 +2813,6 @@ def main():
     app.add_handler(CommandHandler("addbalance", cmd_addbalance))
     app.add_handler(CommandHandler("setbalance", cmd_setbalance))
     app.add_handler(CommandHandler("cleanup", cmd_cleanup))
-    app.add_handler(CommandHandler("stats", cmd_stats))
     app.add_handler(CommandHandler("reklam", cmd_reklam))
     app.add_handler(CommandHandler("id", cmd_id))
     
