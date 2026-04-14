@@ -2415,20 +2415,6 @@ async def cmd_id(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
-
-async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Admin komutu - Bot istatistikleri"""
-    user = update.effective_user
-    
-    if user.id not in ADMIN_IDS:
-        await update.message.reply_text("⛔ Bu komutu kullanma yetkiniz yok!")
-        return
-    
-    db = await get_db()
-    
-    total_users = await db.users.count_documents({})
-    total_transactions = await db.transactions.count_documents({})
-    total_games = await db.games.count_documents({})
     
     # Aktif oyunlar
     active_games_count = 0
