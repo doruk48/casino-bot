@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 import secrets
@@ -23,13 +22,19 @@ from telegram.error import BadRequest
 from PIL import Image, ImageDraw, ImageFont
 import io
 import re
-
-
-# ═══════════════════════════════════════════════════════════════
-#  RAILWAY İÇİN OTOMATİK FONT İNDİRME (KOD İÇİNDE)
-# ═══════════════════════════════════════════════════════════════
-
 import urllib.request
+
+
+# ═══════════════════════════════════════════════════════════════
+#  BASE_DIR İLK ÖNCE TANIMLANIR (EN BAŞTA!)
+# ═══════════════════════════════════════════════════════════════
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+# ═══════════════════════════════════════════════════════════════
+#  RAILWAY İÇİN OTOMATİK FONT İNDİRME (BASE_DIR'DEN SONRA)
+# ═══════════════════════════════════════════════════════════════
 
 def download_font_if_needed(font_url: str, font_path: str) -> str:
     """Font yoksa internetten indir"""
@@ -47,7 +52,7 @@ def download_font_if_needed(font_url: str, font_path: str) -> str:
         print(f"❌ Font indirilemedi: {e}")
         return None
 
-# Font URL'leri (Google Fonts)
+# Font URL'leri (BASE_DIR artık var)
 FONTS = {
     "roboto_bold": {
         "url": "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf",
@@ -62,6 +67,7 @@ FONTS = {
 # Bot başlarken fontları indir
 for font_name, font_info in FONTS.items():
     download_font_if_needed(font_info["url"], font_info["path"])
+
 
 # ═══════════════════════════════════════════════════════════════
 #  AYARLAR
@@ -83,22 +89,20 @@ LOG_FILE = "casinibot.log"
 MAX_SAFE_BALANCE = 10**60
 WARNING_LIMIT = 10**58
 
-# # Görsel yolları (Tüm görseller ana klasörde)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
 # Rulet
 ROULETTE_MULTIPLIERS = {"red": 2, "black": 2, "green": 72, "number": 36}
-ROULETTE_IMG_PATH = BASE_DIR  # 0.jpg, 1.jpg, spin.jpg burada
+ROULETTE_IMG_PATH = BASE_DIR
 
-# Blackjack (kart görselleri ana klasörde)
-BLACKJACK_IMG_PATH = BASE_DIR  # ace_of_hearts.png, king_of_spades.png, back.png burada
+# Blackjack
+BLACKJACK_IMG_PATH = BASE_DIR
 
-# Kazı Kazan
+# Kazı Kazan (BASE_DIR zaten tanımlı)
 KAPALI_KART_PATH = os.path.join(BASE_DIR, "kapali.jpg")
 ACIK_KART_PATH = os.path.join(BASE_DIR, "acik.jpg")
 
 # Transfer
 TRANSFER_TEMPLATE_PATH = os.path.join(BASE_DIR, "transfer.png")
+
 
 # Çarkıfelek
 WHEEL_SEGMENTS = [
