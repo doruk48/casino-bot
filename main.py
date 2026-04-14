@@ -1,4 +1,4 @@
-import asyncio  # ✅ BUNU EKLE!
+import asyncio
 import logging
 import os
 import secrets
@@ -23,61 +23,40 @@ from telegram.error import BadRequest
 from PIL import Image, ImageDraw, ImageFont
 import io
 import re
-import urllib.request
 
 
 # ═══════════════════════════════════════════════════════════════
-#  BASE_DIR İLK ÖNCE TANIMLANIR
+#  BASE_DIR TANIMI
 # ═══════════════════════════════════════════════════════════════
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # ═══════════════════════════════════════════════════════════════
-#  OTOMATİK FONT İNDİRME (ÇALIŞAN URL'LER ile)
+#  FONT BULMA FONKSİYONU (RAILWAY UYUMLU)
 # ═══════════════════════════════════════════════════════════════
 
-def download_font_if_needed(font_url: str, font_path: str) -> str:
-    """Font yoksa internetten indir"""
-    if os.path.exists(font_path):
-        print(f"✅ Font zaten var: {font_path}")
-        return font_path
+def get_font(font_size: int):
+    """Sistemdeki fontları dene, hiçbiri yoksa default kullan"""
     
-    try:
-        print(f"📥 Font indiriliyor: {font_url}")
-        os.makedirs(os.path.dirname(font_path), exist_ok=True)
-        
-        # User-Agent ekleyelim (bazı sunucular ister)
-        req = urllib.request.Request(font_url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req) as response:
-            with open(font_path, 'wb') as out_file:
-                out_file.write(response.read())
-        
-        print(f"✅ Font indirildi: {font_path}")
-        return font_path
-    except Exception as e:
-        print(f"❌ Font indirilemedi: {e}")
-        return None
-
-# ✅ ÇALIŞAN FONT URL'LERİ (Google Fonts'un gerçek raw URL'leri)
-FONTS = {
-    "roboto_bold": {
-        "url": "https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf",
-        "path": os.path.join(BASE_DIR, "fonts", "Roboto-Bold.ttf")
-    },
-    "playfair_bold": {
-        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/PlayfairDisplay-Bold.ttf",
-        "path": os.path.join(BASE_DIR, "fonts", "PlayfairDisplay-Bold.ttf")
-    },
-    "dejavu_sans": {
-        "url": "https://raw.githubusercontent.com/google/fonts/main/apache/dejavusans/DejaVuSans-Bold.ttf",
-        "path": os.path.join(BASE_DIR, "fonts", "DejaVuSans-Bold.ttf")
-    }
-}
-
-# Fontları indir
-for font_name, font_info in FONTS.items():
-    download_font_if_needed(font_info["url"], font_info["path"])
+    font_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf",
+        "/system/fonts/Roboto-Bold.ttf",
+    ]
+    
+    for path in font_paths:
+        try:
+            font = ImageFont.truetype(path, font_size)
+            print(f"✅ Font bulundu: {path} (boyut: {font_size})")
+            return font
+        except:
+            continue
+    
+    print(f"⚠️ Font bulunamadı, default kullanılıyor (boyut: {font_size})")
+    return ImageFont.load_default()
+    
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -596,7 +575,7 @@ async def get_display_name(uid: int) -> str:
     return str(uid)
 
 def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO:
-    """Transfer görseli - OTOMATİK FONT İNDİRME"""
+    """Transfer görseli oluştur - Sistem fontu kullanır"""
     
     transfer_template = os.path.join(BASE_DIR, "transfer.png")
     
@@ -608,56 +587,11 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
     txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(txt_layer)
     
-    # Fontları indir ve yükle
-    roboto_font = os.path.join(BASE_DIR, "fonts", "Roboto-Bold.ttf")
-    playfair_font = os.path.join(BASE_DIR, "fonts", "PlayfairDisplay-Bold.ttf")
+    # ✅ SADECE SİSTEM FONTU KULLAN (indirme yok)
+    font_isim = get_font(82)
+    font_miktar = get_font(110)
+    font_token = get_font(50)
     
-    # Fontları indir (yoksa)
-    if not os.path.exists(roboto_font):
-        download_font_if_needed(
-            "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf",
-            roboto_font
-        )
-    if not os.path.exists(playfair_font):
-        download_font_if_needed(
-            "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/PlayfairDisplay-Bold.ttf",
-            playfair_font
-        )
-    
-    font_isim = None
-    font_miktar = None
-    font_token = None
-    
-    font_size_isim = 82
-    font_size_miktar = 110
-    font_size_token = 50
-    
-    # Playfair fontunu dene (şık olan)
-    try:
-        if os.path.exists(playfair_font):
-            font_isim = ImageFont.truetype(playfair_font, font_size_isim)
-            font_miktar = ImageFont.truetype(playfair_font, font_size_miktar)
-            font_token = ImageFont.truetype(playfair_font, font_size_token)
-            print(f"✅ Transfer font yüklendi: Playfair")
-    except:
-        pass
-    
-    # Roboto fontunu dene (ikinci seçenek)
-    if font_isim is None:
-        try:
-            if os.path.exists(roboto_font):
-                font_isim = ImageFont.truetype(roboto_font, font_size_isim)
-                font_miktar = ImageFont.truetype(roboto_font, font_size_miktar)
-                font_token = ImageFont.truetype(roboto_font, font_size_token)
-                print(f"✅ Transfer font yüklendi: Roboto")
-        except:
-            pass
-    
-    # Hala yoksa default
-    if font_isim is None:
-        print("⚠️ Transfer font bulunamadı, default kullanılıyor")
-        font_isim = font_miktar = font_token = ImageFont.load_default()
-
     # Koordinatlar
     original_width, original_height = 1024, 700
     scale_x = width / original_width
@@ -2007,7 +1941,7 @@ KAPALI_KART_PATH = os.path.join(BASE_DIR, "kapali.jpg")
 ACIK_KART_PATH = os.path.join(BASE_DIR, "acik.jpg")
 
 def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
-    """Açık kart görseline sonuçları yaz - OTOMATİK FONT İNDİRME"""
+    """Açık kart görseline sonuçları yaz - Sistem fontu kullanır"""
     
     acik_kart = os.path.join(BASE_DIR, "acik.jpg")
     
@@ -2017,31 +1951,8 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     img = Image.open(acik_kart)
     draw = ImageDraw.Draw(img)
     
-    # Önce kendi indirdiğimiz fontları dene
-    local_font = os.path.join(BASE_DIR, "fonts", "Roboto-Bold.ttf")
-    
-    font = None
-    font_size = 160
-    
-    # Font var mı kontrol et, yoksa indir
-    if not os.path.exists(local_font):
-        download_font_if_needed(
-            "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf",
-            local_font
-        )
-    
-    # Fontu yüklemeyi dene
-    try:
-        if os.path.exists(local_font):
-            font = ImageFont.truetype(local_font, font_size)
-            print(f"✅ Font yüklendi: {local_font} (boyut: {font_size})")
-    except Exception as e:
-        print(f"Font yüklenemedi: {e}")
-    
-    # Hala yoksa default font kullan
-    if font is None:
-        print("⚠️ Font bulunamadı, default font kullanılıyor")
-        font = ImageFont.load_default()
+    # ✅ Sadece sistem fontunu kullan (indirme yok)
+    font = get_font(160)
     
     # Görsel boyutlarına göre ölçeklendirme
     width, height = img.size
@@ -2070,7 +1981,7 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
         elif value == 0:
             text_color = (255, 0, 0)  # Kırmızı
         else:
-            text_color = (0, 0, 0)  # Siyah
+            text_color = (255, 255, 255)  # Beyaz (koyu arkaplan için)
         
         text = f"{value}x"
         
