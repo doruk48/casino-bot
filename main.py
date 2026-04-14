@@ -591,9 +591,9 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
     draw = ImageDraw.Draw(txt_layer)
     
     # Fontlar (küçük görselde normal boyut yeterli)
-    font_isim = get_font(60)
-    font_miktar = get_font(80)
-    font_token = get_font(40)
+    font_isim = get_font(500)
+    font_miktar = get_font(500)
+    font_token = get_font(500)
     
     # Yüzdelik koordinatlar (görsel boyutundan bağımsız)
     draw.text((width * 0.57, height * 0.19), sender, fill="#F5F5F5", font=font_isim, anchor="mm")
@@ -2074,7 +2074,7 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     draw = ImageDraw.Draw(img)
     
     # Font bul (artık küçük görselde büyük durur)
-    font = get_font(120)  # 120 bile yeterli olabilir
+    font = get_font(500)  # 120 bile yeterli olabilir
     
     # Görselin yeni boyutları
     width, height = img.size
