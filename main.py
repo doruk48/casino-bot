@@ -2751,7 +2751,46 @@ async def cmd_reklam(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # ═══════════════════════════════════════════════════════════════
 #  MENÜ SİSTEMİ
 # ═══════════════════════════════════════════════════════════════
+async def cmd_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Ana menüyü göster"""
+    user = update.effective_user
+    await get_or_create_user(user.id, user.username, user.full_name)
+    bal = await get_balance(user.id)
     
+    keyboard = [
+        [
+            InlineKeyboardButton("🎰 RULET", callback_data="menu_roulette"),
+            InlineKeyboardButton("🃏 BLACKJACK", callback_data="menu_blackjack")
+        ],
+        [
+            InlineKeyboardButton("🎲 ZAR (PvP)", callback_data="menu_dice"),
+            InlineKeyboardButton("🎡 ÇARKIFELEK", callback_data="menu_wheel")
+        ],
+        [
+            InlineKeyboardButton("🎟️ KAZI KAZAN", callback_data="menu_scratch"),
+            InlineKeyboardButton("💰 BAKİYE", callback_data="menu_balance")
+        ],
+        [
+            InlineKeyboardButton("🏆 LİDERLİK", callback_data="menu_leaderboard"),
+            InlineKeyboardButton("🎁 GÜNLÜK BONUS", callback_data="menu_daily")
+        ],
+        [
+            InlineKeyboardButton("🌟 VIP KASA", callback_data="menu_buy"),
+            InlineKeyboardButton("❓ YARDIM", callback_data="menu_help")
+        ]
+    ]
+    
+    await update.message.reply_text(
+        f"🎮 <b>CASİNİBOT ANA MENÜ</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 {user.full_name}\n"
+        f"💰 Bakiyeniz: {format_amount(bal)}\n\n"
+        f"Bir oyun seçin veya bilgi almak için butonlara tıklayın:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="HTML"
+    )
+
+
 async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Menü butonları için callback handler"""
     query = update.callback_query
