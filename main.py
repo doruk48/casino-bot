@@ -2117,7 +2117,7 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     print(f"📐 Yeni görsel boyutu: {width}x{height}")
     
     # ✅ Dinamik font boyutu (görsele göre ayarlanır)
-    font = get_font(int(height * 0.20))  # Yüksekliğin %20'si
+    font = get_font(int(height * 0.15))  # Yüksekliğin %20'si
     
     # Koordinatları yeniden hesapla (görsel küçüldü)
     boxes = [
