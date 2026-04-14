@@ -632,77 +632,108 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"🎮 Oyunlar için /menu",
         parse_mode="HTML"
     )
-async def cmd_leaderboard(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    if is_rate_limited(update.effective_user.id): return
-    
-    now = time.monotonic()
-    if _lb_cache["data"] and now - _lb_cache["ts"] < 60:
-        rows = _lb_cache["data"]
-    else:
-        rows = await get_leaderboard(LEADERBOARD_SIZE)
-        _lb_cache["data"] = rows
-        _lb_cache["ts"] = now
-    
-    medals = ["🥇", "🥈", "🥉"]
-    lines = ["🏆 <b>LİDERLİK TABLOSU</b>", "━━━━━━━━━━━━━━━━━━━━━"]
-    
-    for i, r in enumerate(rows):
-        lvl, emoji = get_level(r["balance"])
-        medal = medals[i] if i < 3 else f"{i+1}."
-        name = r.get("display_name", "Bilinmeyen")[:15]
-        lines.append(f"{medal} {name} [{lvl}]{emoji} — {format_amount(r['balance'])}")
-    
-    await update.message.reply_text("\n".join(lines), parse_mode="HTML")
+    # ═══════════════════════════════════════════════════════════════
+#  GENEL KOMUTLAR
+# ═══════════════════════════════════════════════════════════════
 
-async def cmd_changename(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Başlangıç komutu"""
     user = update.effective_user
-    if is_rate_limited(user.id): return
+    u = await get_or_create_user(user.id, user.username, user.full_name)
+    lvl, emoji = get_level(u["balance"])
     
-    if not ctx.args:
-        await update.message.reply_text("✏️ Kullanım: /changename <yeni isim>")
-        return
-    
-    name = " ".join(ctx.args)[:32]
-    if len(name) < 2:
-        await update.message.reply_text("❌ En az 2 karakter.")
-        return
-    
-    db = await get_db()
-    await db.users.update_one(
-        {"telegram_id": user.id},
-        {"$set": {"display_name": name, "updated_at": datetime.now()}}
+    await update.message.reply_text(
+        f"🎰 <b>CasiniBot'a Hoş Geldiniz!</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 <b>{user.full_name}</b> [{lvl}] {emoji}\n"
+        f"💳 Bakiyeniz: {format_amount(u['balance'])}\n\n"
+        f"🍀 Bol şans!\n📌 Komutlar için /help",
+        parse_mode="HTML"
     )
-    
-    await update.message.reply_text(f"✅ İsminiz <b>{name}</b> olarak güncellendi!", parse_mode="HTML")
+
 
 async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Yardım komutu"""
     help_text = (
         "🎰 <b>CASİNİBOT KOMUTLAR</b>\n"
         "━━━━━━━━━━━━━━━━━━━━━\n"
         "👤 <b>HESAP</b>\n"
         "/start — Kayıt / Hoş geldin\n"
         "/balance — Bakiyeni göster\n"
-        "/changename — İsim değiştir\n"
-        "/leaderboard — İlk 15 oyuncu\n"
+        "/daily — Günlük bonus\n"
         "/moneys — Para gönder\n"
-        "/daily — Günlük bonus\n\n"
+        "/leaderboard — Liderlik tablosu\n\n"
         "🎡 <b>RULET</b>\n"
         "/rulet — Rulet başlat\n"
-        "/red /black /green /number /numbers\n\n"
-        "🎲 <b>ZAR (PvP)</b>\n"
-        "/dicebet — Başlat | /dice — Katıl\n\n"
-        "🎡 <b>ÇARKIFELEK</b>\n"
-        "/wheelbet — Başlat | /wheel — Bahis\n\n"
-        "🎟 <b>KAZI KAZAN</b>\n"
-        "/kazi — Oyna\n\n"
+        "/red /black /green /number\n\n"
         "🃏 <b>BLACKJACK</b>\n"
-        "/blackjack — Başlat | /bj — Bahis\n\n"
+        "/blackjack — Başlat\n"
+        "/bj — Bahis yap\n\n"
+        "🎲 <b>ZAR (PvP)</b>\n"
+        "/dicebet — Başlat\n"
+        "/dice — Katıl\n\n"
+        "🎡 <b>ÇARKIFELEK</b>\n"
+        "/wheelbet — Başlat\n"
+        "/wheel — Bahis\n\n"
+        "🎟 <b>KAZI KAZAN</b>\n"
+        "/kazisolo — Tek kişilik\n"
+        "/kazibet — Turnuva\n\n"
         "💰 <b>SATIN AL</b>\n"
-        "/buy — Telegram Stars ile oyun parası satın al\n\n"
-        "💡 Miktar yerine <code>allin</code> yazarak tüm bakiyeni yatırabilirsin!"
+        "/buy — Stars ile satın al"
     )
-    
     await update.message.reply_text(help_text, parse_mode="HTML")
+
+
+async def cmd_balance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Bakiye sorgula"""
+    user = update.effective_user
+    if is_rate_limited(user.id): return
+    
+    u = await get_user(user.id)
+    if not u:
+        await update.message.reply_text("❌ Kullanıcı bulunamadı. /start yazın.")
+        return
+    
+    lvl, emoji = get_level(u["balance"])
+    await update.message.reply_text(
+        f"💳 <b>{user.full_name}</b> [{lvl}] {emoji}\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"💰 Bakiye: <b>{format_amount(u['balance'])}</b>\n"
+        f"🎮 Oynanan: {u.get('games_played', 0)}",
+        parse_mode="HTML"
+    )
+
+
+async def cmd_daily(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Günlük bonus"""
+    user = update.effective_user
+    if is_rate_limited(user.id): return
+    
+    # Bu fonksiyon zaten varsa onu kullan, yoksa basit versiyon
+    await update.message.reply_text(
+        "🎁 <b>GÜNLÜK BONUS</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        "Bu özellik geçici olarak devre dışı.",
+        parse_mode="HTML"
+    )
+
+
+async def cmd_leaderboard(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Liderlik tablosu"""
+    if is_rate_limited(update.effective_user.id): return
+    
+    rows = await get_leaderboard(LEADERBOARD_SIZE)
+    
+    medals = ["🥇", "🥈", "🥉"]
+    lines = ["🏆 <b>LİDERLİK TABLOSU</b>", "━━━━━━━━━━━━━━━━━━━━━"]
+    
+    for i, r in enumerate(rows):
+        medal = medals[i] if i < 3 else f"{i+1}."
+        name = r.get("display_name", "Bilinmeyen")[:15]
+        lines.append(f"{medal} {name} — {format_amount(r['balance'])}")
+    
+    await update.message.reply_text("\n".join(lines), parse_mode="HTML")
+    
 # ═══════════════════════════════════════════════════════════════
 #  GÜNLÜK BONUS
 # ═══════════════════════════════════════════════════════════════
