@@ -1,3 +1,4 @@
+import asyncio  # ✅ BUNU EKLE!
 import logging
 import os
 import secrets
@@ -26,14 +27,14 @@ import urllib.request
 
 
 # ═══════════════════════════════════════════════════════════════
-#  BASE_DIR İLK ÖNCE TANIMLANIR (EN BAŞTA!)
+#  BASE_DIR İLK ÖNCE TANIMLANIR
 # ═══════════════════════════════════════════════════════════════
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 # ═══════════════════════════════════════════════════════════════
-#  RAILWAY İÇİN OTOMATİK FONT İNDİRME (BASE_DIR'DEN SONRA)
+#  OTOMATİK FONT İNDİRME (ÇALIŞAN URL'LER ile)
 # ═══════════════════════════════════════════════════════════════
 
 def download_font_if_needed(font_url: str, font_path: str) -> str:
@@ -45,26 +46,36 @@ def download_font_if_needed(font_url: str, font_path: str) -> str:
     try:
         print(f"📥 Font indiriliyor: {font_url}")
         os.makedirs(os.path.dirname(font_path), exist_ok=True)
-        urllib.request.urlretrieve(font_url, font_path)
+        
+        # User-Agent ekleyelim (bazı sunucular ister)
+        req = urllib.request.Request(font_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req) as response:
+            with open(font_path, 'wb') as out_file:
+                out_file.write(response.read())
+        
         print(f"✅ Font indirildi: {font_path}")
         return font_path
     except Exception as e:
         print(f"❌ Font indirilemedi: {e}")
         return None
 
-# Font URL'leri (BASE_DIR artık var)
+# ✅ ÇALIŞAN FONT URL'LERİ (Google Fonts'un gerçek raw URL'leri)
 FONTS = {
     "roboto_bold": {
-        "url": "https://github.com/google/fonts/raw/main/apache/roboto/Roboto-Bold.ttf",
+        "url": "https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf",
         "path": os.path.join(BASE_DIR, "fonts", "Roboto-Bold.ttf")
     },
     "playfair_bold": {
-        "url": "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/PlayfairDisplay-Bold.ttf",
+        "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/PlayfairDisplay-Bold.ttf",
         "path": os.path.join(BASE_DIR, "fonts", "PlayfairDisplay-Bold.ttf")
+    },
+    "dejavu_sans": {
+        "url": "https://raw.githubusercontent.com/google/fonts/main/apache/dejavusans/DejaVuSans-Bold.ttf",
+        "path": os.path.join(BASE_DIR, "fonts", "DejaVuSans-Bold.ttf")
     }
 }
 
-# Bot başlarken fontları indir
+# Fontları indir
 for font_name, font_info in FONTS.items():
     download_font_if_needed(font_info["url"], font_info["path"])
 
@@ -96,14 +107,12 @@ ROULETTE_IMG_PATH = BASE_DIR
 # Blackjack
 BLACKJACK_IMG_PATH = BASE_DIR
 
-# Kazı Kazan (BASE_DIR zaten tanımlı)
+# Kazı Kazan
 KAPALI_KART_PATH = os.path.join(BASE_DIR, "kapali.jpg")
 ACIK_KART_PATH = os.path.join(BASE_DIR, "acik.jpg")
 
 # Transfer
 TRANSFER_TEMPLATE_PATH = os.path.join(BASE_DIR, "transfer.png")
-
-
 # Çarkıfelek
 WHEEL_SEGMENTS = [
     ("💀 PASS 💀", 0), ("💀 PASS 💀", 0), ("💀 PASS 💀", 0),
