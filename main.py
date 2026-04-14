@@ -2416,7 +2416,7 @@ async def cmd_id(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Admin komutu - Bot istatistikleri"""
     user = update.effective_user
     
