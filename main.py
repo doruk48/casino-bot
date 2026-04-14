@@ -596,7 +596,12 @@ async def get_display_name(uid: int) -> str:
     return str(uid)
 
 def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO:
+    """Transfer görseli - İtalik + Gölgeli"""
+    
     transfer_template = os.path.join(BASE_DIR, "transfer.png")
+    
+    if not os.path.exists(transfer_template):
+        raise FileNotFoundError(f"Transfer şablonu bulunamadı: {transfer_template}")
     
     img = Image.open(transfer_template).convert('RGBA')
     img.thumbnail((800, 600), Image.Resampling.LANCZOS)
@@ -605,21 +610,41 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
     txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(txt_layer)
     
-    # Dinamik font boyutları
-    font_isim = get_font(int(height * 0.10))
-    font_miktar = get_font(int(height * 0.13))
-    font_token = get_font(int(height * 0.067))
+    # ✅ İTALİK fontlar yükle
+    try:
+        # İtalik Bold font dene
+        font_isim = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf", int(height * 0.10))
+        font_miktar = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf", int(height * 0.13))
+        font_token = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf", int(height * 0.067))
+    except:
+        # Fallback
+        font_isim = get_font(int(height * 0.10))
+        font_miktar = get_font(int(height * 0.13))
+        font_token = get_font(int(height * 0.067))
     
-    # Yazıları çiz
+    # ✅ Mat altın renk (görseldeki gibi)
+    gold_color = "#B8860B"  # Koyu altın
+    shadow_color = "#4a3a1a"  # Koyu gölge
+    
+    # İsimler (beyaz)
     draw.text((width * 0.57, height * 0.19), sender, fill="#F5F5F5", font=font_isim, anchor="mm")
     draw.text((width * 0.57, height * 0.53), receiver, fill="#F5F5F5", font=font_isim, anchor="mm")
     
+    # Miktar (gölgeli altın)
     amount_text = format_amount(amount).replace(CURRENCY_SYMBOL, "").strip()
-    draw.text((width * 0.47, height * 0.86), amount_text, fill="#D4AF37", font=font_miktar, anchor="lm")
     
+    # Önce gölge (biraz sağda-aşağıda)
+    draw.text((width * 0.47 + 3, height * 0.86 + 3), amount_text, fill=shadow_color, font=font_miktar, anchor="lm")
+    # Sonra asıl yazı
+    draw.text((width * 0.47, height * 0.86), amount_text, fill=gold_color, font=font_miktar, anchor="lm")
+    
+    # Token yazısı (gölgeli)
     try:
         text_w = draw.textlength(amount_text, font=font_miktar)
-        draw.text((width * 0.47 + text_w + 20, height * 0.87), "Token", fill="#D4AF37", font=font_token, anchor="lm")
+        # Gölge
+        draw.text((width * 0.47 + text_w + 20 + 3, height * 0.87 + 3), "Token", fill=shadow_color, font=font_token, anchor="lm")
+        # Asıl yazı
+        draw.text((width * 0.47 + text_w + 20, height * 0.87), "Token", fill=gold_color, font=font_token, anchor="lm")
     except:
         pass
     
