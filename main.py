@@ -1952,7 +1952,7 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     draw = ImageDraw.Draw(img)
     
     # ✅ Sadece sistem fontunu kullan (indirme yok)
-    font = get_font(400)
+    font = get_font(4000)
     
     # Görsel boyutlarına göre ölçeklendirme
     width, height = img.size
