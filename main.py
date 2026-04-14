@@ -1,39 +1,39 @@
 import asyncio
 import logging
-import os
-import secrets
-import random
+os'u içe aktar
+gizli bilgileri içe aktar
+rastgele içe aktar
 import shutil
-import time
-import uuid
+ithalat zamanı
+uuid'yi içe aktar
 from collections import Counter
 from datetime import datetime
 
-# MongoDB imports
+# MongoDB içe aktarmaları
 from motor.motor_asyncio import AsyncIOMotorClient
 from typing import Dict, List, Tuple
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, LabeledPrice, SuccessfulPayment
-from telegram.ext import (
-    Application, CommandHandler, CallbackQueryHandler, ContextTypes,
-    PreCheckoutQueryHandler, MessageHandler, filters
+from telegram.ext import  (
+    Uygulama, Komut İşleyici, Geri Çağrı Sorgu İşleyici, Bağlam Türleri,
+    PreCheckoutQueryHandler, MessageHandler, filtreler
 )
 from telegram.error import BadRequest
 
-from PIL import Image, ImageDraw, ImageFont
-import io
-import re
+PIL'den Image, ImageDraw, ImageFont'u içe aktarın
+io'yu içe aktar
+yeniden içe aktar
 
 
 # ═══════════════════════════════════════════════════════════════
-#  BASE_DIR TANIMI
+# BASE_DIR TANIMI
 # ═══════════════════════════════════════════════════════════════
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname ( os.path.abspath ( __ file__ ) )​​​
 
 
 # ═══════════════════════════════════════════════════════════════
-#  FONT BULMA FONKSİYONU (RAILWAY UYUMLU)
+#FONT BULMA FONKSİYONU (Demiryolu UYUMLU)
 # ═══════════════════════════════════════════════════════════════
 
 def get_font(font_size: int):
@@ -726,47 +726,142 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_balance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Bakiye sorgula"""
+    """Kullanıcı bilgileri - Şık görünümlü"""
     user = update.effective_user
     if is_rate_limited(user.id): return
     
     u = await get_user(user.id)
     if not u:
-        await update.message.reply_text("❌ Kullanıcı bulunamadı. /start yazın.")
+        await update.message.reply_text("❌ Önce /start yazın!")
         return
     
-    lvl, emoji = get_level(u["balance"])
-    await update.message.reply_text(
-        f"💳 <b>{user.full_name}</b> [{lvl}] {emoji}\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"💰 Bakiye: <b>{format_amount(u['balance'])}</b>\n"
-        f"🎮 Oynanan: {u.get('games_played', 0)}",
-        parse_mode="HTML"
+    # Kullanıcı adı
+    username = user.username if user.username else str(user.id)
+    
+    # Seviye ve rozet (balance'a göre)
+    def get_level_info(balance: int):
+        if balance >= 10**60:
+            return ("Kozmik Varlık", "🪐")
+        elif balance >= 10**30:
+            return ("Mutlak Tanrı", "👑")
+        elif balance >= 10**24:
+            return ("Septillioner", "🛡️")
+        elif balance >= 10**21:
+            return ("Sextillioner", "🌀")
+        elif balance >= 10**18:
+            return ("Mythic", "🌌")
+        elif balance >= 10**15:
+            return ("Grand", "🔱")
+        elif balance >= 10**12:
+            return ("Epic", "💎")
+        elif balance >= 10**9:
+            return ("Legend", "🥇")
+        elif balance >= 10**6:
+            return ("Expert", "🥈")
+        else:
+            return ("Çırak", "🪵")
+    
+    level_name, level_emoji = get_level_info(u["balance"])
+    
+    # Genel sıralama (leaderboard'dan al)
+    db = await get_db()
+    all_users = await db.users.find().sort("balance", -1).to_list(length=None)
+    rank = 1
+    for i, doc in enumerate(all_users, 1):
+        if doc["telegram_id"] == user.id:
+            rank = i
+            break
+    
+    # Formatlı bakiye
+    balance_text = f"{u['balance']:,}".replace(",", ".")
+    
+    # Toplam kazanç ve bahis
+    total_won_text = f"{u.get('total_won', 0):,}".replace(",", ".")
+    total_wagered_text = f"{u.get('total_wagered', 0):,}".replace(",", ".")
+    
+    # Oyun istatistikleri
+    games_played = u.get('games_played', 0)
+    win_rate = (u.get('total_won', 0) / u.get('total_wagered', 1) * 100) if u.get('total_wagered', 0) > 0 else 0
+    
+    info_text = (
+        f"📌 <b>Verilerim</b>\n\n"
+        f"    👤 {username}\n\n"
+        f"    🤴 Seviye 🔘 {level_name} {level_emoji}\n\n"
+        f"    🏧 Bakiye 🔘 {balance_text} 🪙\n\n"
+        f"    📊 Toplam Kazanç 🔘 {total_won_text} 🪙\n"
+        f"    🎲 Toplam Bahis 🔘 {total_wagered_text} 🪙\n"
+        f"    🎮 Oynanan Oyun 🔘 {games_played}\n"
+        f"    📈 Kazanma Oranı 🔘 %{win_rate:.1f}\n\n"
+        f"    🌍 Genel Sıralamanız 🔘 {rank}\n"
+        f"    🔗 Referans Sayısı 🔘 0\n"
+        f"    🎯 Günlük Seri 🔘 {u.get('daily_streak', 0)} gün"
     )
+    
+    await update.message.reply_text(info_text, parse_mode="HTML")
 async def cmd_changename(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """İsim değiştir"""
+    """İsim değiştirme komutu"""
     user = update.effective_user
-    if is_rate_limited(user.id): return
+    
+    if is_rate_limited(user.id):
+        return
     
     if not ctx.args:
-        await update.message.reply_text("✏️ Kullanım: /changename <yeni isim>")
+        await update.message.reply_text(
+            "✏️ <b>İsim Değiştirme</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "Kullanım: /changename <yeni isim>\n\n"
+            "Örnek: /changename Ahmet\n"
+            "Örnek: /changename Ahmet Kaya",
+            parse_mode="HTML"
+        )
         return
     
-    name = " ".join(ctx.args)[:32]
-    if len(name) < 2:
-        await update.message.reply_text("❌ En az 2 karakter.")
+    # Yeni ismi al (en fazla 32 karakter)
+    new_name = " ".join(ctx.args)[:32]
+    
+    # Minimum uzunluk kontrolü
+    if len(new_name) < 2:
+        await update.message.reply_text("❌ İsim en az 2 karakter olmalı!")
         return
     
+    # Özel karakterleri temizle (isteğe bağlı)
+    clean_name = re.sub(r'[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]', '', new_name)
+    clean_name = clean_name.strip()
+    
+    if not clean_name:
+        await update.message.reply_text("❌ Geçersiz isim! Sadece harf ve rakam kullanın.")
+        return
+    
+    # Veritabanında güncelle
     db = await get_db()
-    await db.users.update_one(
+    result = await db.users.update_one(
         {"telegram_id": user.id},
-        {"$set": {"display_name": name}}
+        {"$set": {"display_name": clean_name, "updated_at": datetime.now()}}
     )
-    await update.message.reply_text(f"✅ İsminiz <b>{name}</b> olarak güncellendi!", parse_mode="HTML")
-
+    
+    if result.modified_count > 0:
+        await update.message.reply_text(
+            f"✅ <b>İsim başarıyla değiştirildi!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 Yeni isminiz: <b>{clean_name}</b>",
+            parse_mode="HTML"
+        )
+    else:
+        # Kullanıcı belki de yok
+        await get_or_create_user(user.id, user.username, user.full_name)
+        await db.users.update_one(
+            {"telegram_id": user.id},
+            {"$set": {"display_name": clean_name}}
+        )
+        await update.message.reply_text(
+            f"✅ <b>İsim başarıyla değiştirildi!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 Yeni isminiz: <b>{clean_name}</b>",
+            parse_mode="HTML"
+)    
 
 async def cmd_moneys(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Para transferi - Görselli"""
+    """Para transferi - Rulet'teki gibi tek mesaj"""
     user = update.effective_user
     
     if is_rate_limited(user.id):
@@ -834,26 +929,35 @@ async def cmd_moneys(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     
     new_bal = await get_balance(user.id)
     
-    # Görsel göndermeyi dene
+    # ✅ RULET'TEKİ GİBİ: Görsel + caption TEK MESAJ
     try:
         sender_name = clean_name(user.full_name)
         receiver_name = clean_name(target.full_name)
         transfer_img = create_transfer_image(sender_name, receiver_name, amount)
         
+        # Tek mesaj: görsel + caption (Rulet'teki gibi)
         await update.message.reply_photo(
             photo=transfer_img,
-            caption=f"✅ <b>Transfer Başarılı!</b>\n💰 {format_amount(amount)}\n💳 Yeni bakiyeniz: {format_amount(new_bal)}",
+            caption=(
+                f"✅ <b>Transfer Başarılı!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📤 {sender_name} → 📥 {receiver_name}\n"
+                f"💰 Miktar: {format_amount(amount)}\n"
+                f"💳 Yeni bakiyeniz: {format_amount(new_bal)}"
+            ),
             parse_mode="HTML"
         )
-    except:
-        # Görsel yoksa normal mesaj
+    except Exception as e:
+        logger.error(f"Transfer görseli hatası: {e}")
+        # Görsel oluşamazsa sadece mesaj gönder
         await update.message.reply_text(
             f"✅ <b>Transfer Başarılı!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
             f"📤 {user.full_name} → 📥 {target.full_name}\n"
-            f"💰 {format_amount(amount)}\n"
+            f"💰 Miktar: {format_amount(amount)}\n"
             f"💳 Yeni bakiyeniz: {format_amount(new_bal)}",
             parse_mode="HTML"
-    )
+)
 
 async def cmd_daily(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Günlük bonus"""
@@ -870,18 +974,53 @@ async def cmd_daily(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_leaderboard(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Liderlik tablosu"""
+    """Liderlik tablosu - Şık görünümlü"""
     if is_rate_limited(update.effective_user.id): return
     
     rows = await get_leaderboard(LEADERBOARD_SIZE)
     
-    medals = ["🥇", "🥈", "🥉"]
-    lines = ["🏆 <b>LİDERLİK TABLOSU</b>", "━━━━━━━━━━━━━━━━━━━━━"]
+    # Grup adını al
+    chat = update.effective_chat
+    group_name = chat.title if chat.title else "Casino"
     
-    for i, r in enumerate(rows):
-        medal = medals[i] if i < 3 else f"{i+1}."
+    # Seviye rozetleri (balance'a göre)
+    def get_rank_badge(balance: int) -> str:
+        if balance >= 10**60:
+            return "🪐 Kozmik Varlık"
+        elif balance >= 10**30:
+            return "👑 Mutlak Tanrı"
+        elif balance >= 10**24:
+            return "🛡️ Septillioner"
+        elif balance >= 10**21:
+            return "🌀 Sextillioner"
+        elif balance >= 10**18:
+            return "🌌 Mythic"
+        elif balance >= 10**15:
+            return "🔱 Grand"
+        elif balance >= 10**12:
+            return "💎 Diamond"
+        elif balance >= 10**9:
+            return "🥇 Gold"
+        elif balance >= 10**6:
+            return "🥈 Silver"
+        else:
+            return "🪵 Bronze"
+    
+    # Sıra emojileri
+    rank_emojis = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+    
+    lines = [f"🏆 <b>{group_name} En Zengin {min(LEADERBOARD_SIZE, len(rows))} Kullanıcı</b> 🏆", ""]
+    
+    for i, r in enumerate(rows[:10]):  # İlk 10 göster
+        rank_emoji = rank_emojis[i] if i < len(rank_emojis) else f"{i+1}️⃣"
         name = r.get("display_name", "Bilinmeyen")[:15]
-        lines.append(f"{medal} {name} — {format_amount(r['balance'])}")
+        balance = r["balance"]
+        badge = get_rank_badge(balance)
+        
+        # Büyük sayıları formatla (1.23T, 456.7B gibi)
+        balance_text = format_amount(balance).replace(CURRENCY_SYMBOL, "").strip()
+        
+        lines.append(f"{rank_emoji} {name} ❇️  {balance_text} 🪙 {badge}")
     
     await update.message.reply_text("\n".join(lines), parse_mode="HTML")
     
