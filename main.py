@@ -124,10 +124,6 @@ SUITS = ["♠️", "♥️", "♦️", "♣️"]
 BJ_IMG_PATH = "/storage/emulated/0/Blackjack"
 CARD_WIDTH, CARD_HEIGHT = 60, 84
 
-# Transfer
-TRANSFER_TEMPLATE_PATH = "/storage/emulated/0/balance/transfer.png"
-ACIK_KART_PATH = "/storage/emulated/0/Rulet/acik.jpg"
-KAPALI_KART_PATH = "/storage/emulated/0/Rulet/kapali.jpg"
 
 # Admin
 ADMIN_IDS = [6927797531]
@@ -535,6 +531,81 @@ def is_rate_limited(uid: int) -> bool:
 
 _lb_cache: dict = {"data": None, "ts": 0}
 
+def clean_name(name: str) -> str:
+    """Sadece harf, rakam ve boşluk bırakır (Görselde hata vermemesi için)"""
+    cleaned = re.sub(r'[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]', '', name)
+    return cleaned.strip()
+
+async def get_display_name(uid: int) -> str:
+    """Kullanıcının görünen ismini temizlenmiş halde getirir (MongoDB)"""
+    u = await get_user(uid)
+    if u and u.get('display_name'):
+        return clean_name(u['display_name'])
+    return str(uid)
+
+def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO:
+    """Profesyonel transfer görseli oluşturur - Sınırsız miktar destekli"""
+    
+    # ✅ DÜZELTİLDİ: BASE_DIR kullan
+    transfer_template = os.path.join(BASE_DIR, "transfer.png")
+    
+    if not os.path.exists(transfer_template):
+        raise FileNotFoundError(f"Transfer şablonu bulunamadı: {transfer_template}")
+    
+    img = Image.open(transfer_template).convert('RGBA')
+    width, height = img.size
+    txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
+    draw = ImageDraw.Draw(txt_layer)
+    
+    # ✅ DÜZELTİLDİ: Font yolları (BASE_DIR altında fonts/ klasörü)
+    font_paths = [
+        os.path.join(BASE_DIR, "fonts", "PlayfairDisplay-Bold.ttf"),
+        os.path.join(BASE_DIR, "fonts", "Roboto-Bold.ttf"),
+        "/system/fonts/Roboto-Bold.ttf",  # Android için
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",  # Linux için
+    ]
+    
+    font_isim = font_miktar = font_token = None
+    for path in font_paths:
+        try:
+            font_isim = ImageFont.truetype(path, 82)
+            font_miktar = ImageFont.truetype(path, 110)
+            font_token = ImageFont.truetype(path, 50)
+            break
+        except:
+            continue
+    
+    if not font_isim:
+        font_isim = font_miktar = font_token = ImageFont.load_default()
+
+    # Koordinat Ayarları (Şablonuna göre ölçekleme)
+    scale_x, scale_y = width / 1024, height / 700
+    text_color = "#F5F5F5"
+    gold_color = "#D4AF37"
+    shadow_color = (0, 0, 0, 90)
+    
+    # Gönderen ve Alıcı Çizimi
+    draw.text((580 * scale_x, 130 * scale_y), sender, fill=text_color, font=font_isim, anchor="mm")
+    draw.text((580 * scale_x, 370 * scale_y), receiver, fill=text_color, font=font_isim, anchor="mm")
+    
+    # Miktar Çizimi (Büyük sayılar format_amount ile kısaltılır)
+    amount_text = format_amount(amount).replace(CURRENCY_SYMBOL, "").strip()
+    draw.text((480 * scale_x, 600 * scale_y), amount_text, fill=gold_color, font=font_miktar, anchor="lm")
+    
+    # 'Token' Yazısı (Miktarın hemen yanına)
+    try:
+        text_w = draw.textlength(amount_text, font=font_miktar)
+        draw.text((480 * scale_x + text_w + 20, 610 * scale_y), "Token", fill=gold_color, font=font_token, anchor="lm")
+    except:
+        pass
+
+    # Katmanları birleştir
+    img = Image.alpha_composite(img, txt_layer).convert('RGB')
+    bio = io.BytesIO()
+    img.save(bio, format='PNG')
+    bio.seek(0)
+    return bio
+
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     u = await get_or_create_user(user.id, user.username, user.full_name)
@@ -779,6 +850,7 @@ async def cmd_moneys(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     
     db = await get_db()
     
+    # Transfer işlemi
     await db.users.update_one({"telegram_id": user.id}, {"$inc": {"balance": -amount}})
     await db.users.update_one({"telegram_id": target.id}, {"$inc": {"balance": amount}})
     
@@ -793,12 +865,32 @@ async def cmd_moneys(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     
     new_bal = await get_balance(user.id)
     
-    await update.message.reply_text(
-        f"✅ <b>Transfer Başarılı!</b>\n"
-        f"📤 {user.full_name} → 📥 {target.full_name}\n"
-        f"💰 {format_amount(amount)}\n"
-        f"💳 Yeni bakiyeniz: {format_amount(new_bal)}",
-        parse_mode="HTML"
+    # ✅ GÖRSEL OLUŞTUR VE GÖNDER
+    try:
+        sender_name = await get_display_name(user.id)
+        receiver_name = await get_display_name(target.id)
+        
+        transfer_img = create_transfer_image(sender_name, receiver_name, amount)
+        
+        await update.message.reply_photo(
+            photo=transfer_img,
+            caption=f"✅ <b>Transfer Başarılı!</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📤 {sender_name} → 📥 {receiver_name}\n"
+                    f"💰 {format_amount(amount)}\n"
+                    f"💳 Yeni bakiyeniz: {format_amount(new_bal)}",
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        logger.error(f"Transfer görseli oluşturulamadı: {e}")
+        # Görsel oluşamazsa normal mesaj gönder
+        await update.message.reply_text(
+            f"✅ <b>Transfer Başarılı!</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📤 {user.full_name} → 📥 {target.full_name}\n"
+            f"💰 {format_amount(amount)}\n"
+            f"💳 Yeni bakiyeniz: {format_amount(new_bal)}",
+            parse_mode="HTML"
     )
 
 # ═══════════════════════════════════════════════════════════════
@@ -1225,46 +1317,85 @@ async def _bj_bet_timer(ctx, chat_id, game_id):
         await finish_game(chat_id, game_id, "iptal")
         await cleanup(chat_id)
         return
+    
     bj["state"] = "DEALING"
     deck = _new_deck()
     bj["deck"] = deck
+    
+    # Kartları dağıt
     for uid in bj["order"]:
         bj["players"][uid]["hand"] = [deck.pop(), deck.pop()]
         bj["players"][uid]["state"] = "PLAYING"
+        bj["players"][uid]["cards_sent"] = False  # Yeni: kart gönderilmedi olarak işaretle
+    
     bj["dealer"] = [deck.pop(), deck.pop()]
     bj["current"] = 0
+    
+    # Kurpiyerin açık kartını göster
     dealer_img = combine_cards_with_hidden(bj["dealer"])
     first_card_value = _card_val(bj["dealer"][0][0])
-    await ctx.bot.send_photo(chat_id, photo=dealer_img, caption=f"🎩 KURPİYER\n━━━━━━━━━━━━━━━━━━━━━\nAçık kart: {first_card_value}\nKapalı kart: ?", parse_mode="HTML")
+    await ctx.bot.send_photo(
+        chat_id, 
+        photo=dealer_img, 
+        caption=f"🎩 <b>KURPİYER</b>\n━━━━━━━━━━━━━━━━━━━━━\nAçık kart: {first_card_value}\nKapalı kart: ?",
+        parse_mode="HTML"
+    )
+    
+    # Oyuncuların kartlarını göster
     for uid in bj["order"]:
         p = bj["players"][uid]
         hand_img = combine_cards(p["hand"])
-        await ctx.bot.send_photo(chat_id, photo=hand_img, caption=f"🃏 <b>{p['name']}</b>\n━━━━━━━━━━━━━━━━━━━━━\n🃏 Eliniz: {_hand_val(p['hand'])}", parse_mode="HTML")
+        await ctx.bot.send_photo(
+            chat_id, 
+            photo=hand_img, 
+            caption=f"🃏 <b>{p['name']}</b>\n━━━━━━━━━━━━━━━━━━━━━\n🃏 Eliniz: {_hand_val(p['hand'])}",
+            parse_mode="HTML"
+        )
+        p["cards_sent"] = True  # Kartlar gönderildi olarak işaretle
+    
     await _bj_next(ctx, chat_id, game_id)
 
 async def _bj_next(ctx, chat_id, game_id):
     bj = _bj.get(chat_id)
     if not bj or bj["game_id"] != game_id:
         return
+    
     if bj["current"] >= len(bj["order"]):
         await _bj_dealer(ctx, chat_id, game_id)
         return
+    
     uid = bj["order"][bj["current"]]
     p = bj["players"][uid]
+    
     if p["state"] != "PLAYING":
         bj["current"] += 1
         await _bj_next(ctx, chat_id, game_id)
         return
+    
     val = _hand_val(p["hand"])
-    if val == 21:
-        p["state"] = "STAND"
-        bj["current"] += 1
-        await _bj_next(ctx, chat_id, game_id)
-        return
-    hand_img = combine_cards(p["hand"])
-    await ctx.bot.send_photo(chat_id, photo=hand_img, caption=f"🃏 {p['name']} sırası!\n━━━━━━━━━━━━━━━━━━━━━\n🃏 Eliniz: {val}\n\n⏱ {BLACKJACK_TURN} saniyen var!", reply_markup=_bj_kb(game_id), parse_mode="HTML")
+    
+    # Sadece ilk kez kartları göster
+    if not p.get("cards_sent", False):
+        hand_img = combine_cards(p["hand"])
+        await ctx.bot.send_photo(
+            chat_id, 
+            photo=hand_img, 
+            caption=f"🃏 <b>{p['name']}</b>\n━━━━━━━━━━━━━━━━━━━━━\n🃏 Eliniz: {val}",
+            reply_markup=_bj_kb(game_id),
+            parse_mode="HTML"
+        )
+        p["cards_sent"] = True
+    else:
+        # Sonraki turlarda sadece mesaj gönder
+        await ctx.bot.send_message(
+            chat_id,
+            f"🃏 <b>{p['name']}</b> sırası!\n━━━━━━━━━━━━━━━━━━━━━\n🃏 Eliniz: {val}\n\n⏱ {BLACKJACK_TURN} saniyen var!",
+            reply_markup=_bj_kb(game_id),
+            parse_mode="HTML"
+        )
+    
     p["task"] = asyncio.create_task(_bj_timeout(ctx, chat_id, game_id, uid))
-
+    
 async def _bj_timeout(ctx, chat_id, game_id, uid):
     await asyncio.sleep(BLACKJACK_TURN)
     bj = _bj.get(chat_id)
@@ -1280,48 +1411,96 @@ async def _bj_timeout(ctx, chat_id, game_id, uid):
 async def bj_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    
     try:
         action, game_id = query.data.split(":", 1)
     except:
+        await query.answer("Hata!", show_alert=True)
         return
+    
     user = query.from_user
     chat_id = query.message.chat_id
     bj = _bj.get(chat_id)
+    
     if not bj or bj["game_id"] != game_id:
         await query.answer("Oyun bitti.", show_alert=True)
         return
+    
     if bj["current"] >= len(bj["order"]) or bj["order"][bj["current"]] != user.id:
         await query.answer("Şu an sıranız değil!", show_alert=True)
         return
+    
     p = bj["players"].get(user.id)
     if not p or p["state"] != "PLAYING":
         await query.answer("Sıranız bitti.", show_alert=True)
         return
+    
+    # Zamanlayıcıyı iptal et
     if p.get("task"):
         p["task"].cancel()
+    
     if action == "bj_hit":
+        # Yeni kart çek
         card = bj["deck"].pop()
         p["hand"].append(card)
         val = _hand_val(p["hand"])
+        
+        # Kart görselini oluştur
         hand_img = combine_cards(p["hand"])
+        
         if val > 21:
+            # BUST - Kaybetti
+            await query.edit_message_media(
+                media=InputMediaPhoto(
+                    media=hand_img,
+                    caption=f"💥 <b>BUST!</b>\n━━━━━━━━━━━━━━━━━━━━━\n👤 {p['name']}\n🃏 Eliniz: {val}\n❌ Kaybettiniz!",
+                    parse_mode="HTML"
+                )
+            )
             p["state"] = "BUST"
-            await query.edit_message_media(media=InputMediaPhoto(media=hand_img, caption=f"💥 BUST!\n━━━━━━━━━━━━━━━━━━━━━\nOyuncu: {p['name']}\nEliniz: {val}\n❌ Kaybettiniz!"))
             bj["current"] += 1
             await _bj_next(ctx, chat_id, game_id)
+            
         elif val == 21:
+            # Blackjack - Otomatik stand
+            await query.edit_message_media(
+                media=InputMediaPhoto(
+                    media=hand_img,
+                    caption=f"🎉 <b>BLACKJACK! 21</b>\n━━━━━━━━━━━━━━━━━━━━━\n👤 {p['name']}\n✅ Otomatik Stand",
+                    parse_mode="HTML"
+                )
+            )
             p["state"] = "STAND"
-            await query.edit_message_media(media=InputMediaPhoto(media=hand_img, caption=f"🎉 BLACKJACK! 21\n━━━━━━━━━━━━━━━━━━━━━\nOyuncu: {p['name']}\n✅ Otomatik Stand"))
             bj["current"] += 1
             await _bj_next(ctx, chat_id, game_id)
+            
         else:
-            await query.edit_message_media(media=InputMediaPhoto(media=hand_img, caption=f"🃏 SIRA SENDE\n━━━━━━━━━━━━━━━━━━━━━\nOyuncu: {p['name']}\nEliniz: {val}\n⏳ {BLACKJACK_TURN} saniyen var!"), reply_markup=_bj_kb(game_id))
+            # Devam ediyor - mevcut mesajı düzenle
+            await query.edit_message_media(
+                media=InputMediaPhoto(
+                    media=hand_img,
+                    caption=f"🃏 <b>SIRA SENDE</b>\n━━━━━━━━━━━━━━━━━━━━━\n👤 {p['name']}\n🃏 Eliniz: {val}\n⏳ {BLACKJACK_TURN} saniyen var!",
+                    parse_mode="HTML"
+                ),
+                reply_markup=_bj_kb(game_id)
+            )
+            # Yeni zamanlayıcı başlat
             p["task"] = asyncio.create_task(_bj_timeout(ctx, chat_id, game_id, user.id))
+    
     elif action == "bj_stand":
         hand_val = _hand_val(p["hand"])
         p["state"] = "STAND"
         bj["current"] += 1
-        await query.edit_message_media(media=InputMediaPhoto(media=combine_cards(p["hand"]), caption=f"✋ STAND\n━━━━━━━━━━━━━━━━━━━━━\nOyuncu: {p['name']}\nEliniz: {hand_val} ile durdu."))
+        
+        # Stand yaptığını göster - fotoğrafı düzenle
+        hand_img = combine_cards(p["hand"])
+        await query.edit_message_media(
+            media=InputMediaPhoto(
+                media=hand_img,
+                caption=f"✋ <b>STAND</b>\n━━━━━━━━━━━━━━━━━━━━━\n👤 {p['name']}\n🃏 Eliniz: {hand_val} ile durdu.",
+                parse_mode="HTML"
+            )
+        )
         await _bj_next(ctx, chat_id, game_id)
 
 async def _bj_dealer(ctx, chat_id, game_id):
@@ -1736,13 +1915,86 @@ async def _wheel_timer(ctx, chat_id, game_id):
     
     
 # ═══════════════════════════════════════════════════════════════
-#  KAZI KAZAN - SOLO & TURNUV A
+#  KAZI KAZAN - MONGODB UYUMLU
 # ═══════════════════════════════════════════════════════════════
 
-async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Tek kişilik Kazı Kazan"""
-    user = update.effective_user
+# ✅ Görsel yolları düzeltildi - BASE_DIR kullanıyor
+KAPALI_KART_PATH = os.path.join(BASE_DIR, "kapali.jpg")
+ACIK_KART_PATH = os.path.join(BASE_DIR, "acik.jpg")
+
+def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
+    """Açık kart görseline sonuçları yaz - Gelişmiş Font Desteği"""
     
+    # ✅ DÜZELTİLDİ: BASE_DIR kullan
+    acik_kart = os.path.join(BASE_DIR, "acik.jpg")
+    
+    if not os.path.exists(acik_kart):
+        raise Exception(f"Açık kart görseli bulunamadı: {acik_kart}")
+    
+    img = Image.open(acik_kart)
+    draw = ImageDraw.Draw(img)
+    
+    # ✅ DÜZELTİLDİ: Font yolları (BASE_DIR altında fonts/ klasörü)
+    font_paths = [
+        os.path.join(BASE_DIR, "fonts", "Roboto-Bold.ttf"),
+        os.path.join(BASE_DIR, "fonts", "Roboto-Regular.ttf"),
+        "/system/fonts/Roboto-Bold.ttf",  # Android
+        "/system/fonts/Roboto-Regular.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",  # Linux
+    ]
+    
+    font = None
+    font_size = 160
+    for path in font_paths:
+        try:
+            font = ImageFont.truetype(path, font_size)
+            break
+        except:
+            continue
+    
+    if font is None:
+        font = ImageFont.load_default()
+    
+    # Kutu Koordinatları (görsel boyutuna göre ölçeklendirilebilir)
+    width, height = img.size
+    scale_x, scale_y = width / 1080, height / 800  # Varsayılan şablon boyutu
+    
+    boxes = [
+        {"center": (int(170 * scale_x), int(200 * scale_y)), "index": 0},
+        {"center": (int(550 * scale_x), int(200 * scale_y)), "index": 1},
+        {"center": (int(900 * scale_x), int(200 * scale_y)), "index": 2},
+        {"center": (int(170 * scale_x), int(550 * scale_y)), "index": 3},
+        {"center": (int(550 * scale_x), int(550 * scale_y)), "index": 4},
+        {"center": (int(900 * scale_x), int(550 * scale_y)), "index": 5},
+    ]
+    
+    for box in boxes:
+        center_x, center_y = box["center"]
+        value = board[box["index"]]
+        
+        # Renk: Kazanan yeşil, 0x kırmızı, diğerleri siyah
+        if value == winner_mult and winner_mult > 0:
+            text_color = (0, 255, 0)  # Yeşil
+        elif value == 0:
+            text_color = (255, 0, 0)  # Kırmızı
+        else:
+            text_color = (0, 0, 0)  # Siyah
+        
+        text = f"{value}x"
+        
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        draw.text((center_x - tw / 2, center_y - th / 2), text, fill=text_color, font=font)
+    
+    bio = io.BytesIO()
+    img.save(bio, format='PNG')
+    bio.seek(0)
+    return bio
+
+
+async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Tek kişilik Kazı Kazan - MongoDB uyumlu"""
+    user = update.effective_user
     if is_rate_limited(user.id):
         return
     
@@ -1752,9 +2004,9 @@ async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "📌 Kullanım: <code>/kazisolo &lt;miktar&gt;</code>\n"
             "veya <code>/kazisolo allin</code>\n\n"
-            "🏆 Çarpanlar: 2x, 3x, 5x, 10x, 25x, 50x, 100x, 250x\n"
-            "🎯 6 kutuda 3 aynı çarpan = kazanç!",
-            parse_mode="HTML")
+            "🏆 3 aynı çarpan = KAZANÇ!",
+            parse_mode="HTML"
+        )
         return
     
     await get_or_create_user(user.id, user.username, user.full_name)
@@ -1764,64 +2016,77 @@ async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ {err}")
         return
     
+    # Bahsi düş
     ok = await remove_balance(user.id, amount, "bet", "Kazı Kazan Solo")
     if not ok:
         await update.message.reply_text("❌ Yetersiz bakiye.")
         return
     
-    # Kapalı kartı gönder
-    if os.path.exists(KAPALI_KART_PATH):
-        with open(KAPALI_KART_PATH, "rb") as photo:
+    # Başlangıç görseli (kapalı kart)
+    kapali_kart = os.path.join(BASE_DIR, "kapali.jpg")
+    if os.path.exists(kapali_kart):
+        with open(kapali_kart, "rb") as photo:
             await update.message.reply_photo(
                 photo=photo,
                 caption=f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n💰 Bahis: {format_amount(amount)}\n✨ KAZIYORSUN... ✨",
                 parse_mode="HTML"
             )
     else:
-        await update.message.reply_text(f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n💰 Bahis: {format_amount(amount)}\n✨ KAZIYORSUN... ✨", parse_mode="HTML")
+        await update.message.reply_text(
+            f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n💰 Bahis: {format_amount(amount)}\n✨ KAZIYORSUN... ✨",
+            parse_mode="HTML"
+        )
     
-    await asyncio.sleep(1)
+    await asyncio.sleep(1.5)
     
-    # Kart oluştur
-    board = [SCRATCH_POOL[secrets.randbelow(len(SCRATCH_POOL))] for _ in range(6)]
+    # Kazı Kazan mantığı
+    board = [secrets.choice(SCRATCH_POOL) for _ in range(6)]
     counts = Counter(board)
-    
-    mult = 0
-    match = 0
-    for v, cnt in counts.most_common():
-        if cnt >= 3 and v > 0:
-            mult = v
-            match = cnt
+    winner_mult = 0
+    for mult, count in counts.most_common():
+        if count >= 3 and mult > 0:
+            winner_mult = mult
             break
     
-    # Açık kart gösterimi
-    lines = ["🎟 <b>KAZI KAZAN (SOLO)</b>", "━━━━━━━━━━━━━━━━━━━━━"]
-    line1 = " ".join(f"[{SCRATCH_EMOJI.get(v, '❓')}]" for v in board[:3])
-    line2 = " ".join(f"[{SCRATCH_EMOJI.get(v, '❓')}]" for v in board[3:])
-    lines.append(line1)
-    lines.append(line2)
-    lines.append("━━━━━━━━━━━━━━━━━━━━━")
-    
-    if mult > 0:
-        payout = amount * mult
-        await add_balance(user.id, payout, "win", f"Kazı Kazan solo ({mult}x)")
-        await update_stats(user.id, payout)
+    try:
+        result_img = create_scratch_result_image(board, winner_mult)
+        payout = amount * winner_mult if winner_mult > 0 else 0
+        
+        if winner_mult > 0:
+            await add_balance(user.id, payout, "win", f"Kazı Solo {winner_mult}x")
+            await update_stats(user.id, payout)
+            msg = f"✅ <b>{winner_mult}x</b> bulundu!\n🎉 KAZANDIN! +{format_amount(payout - amount)}"
+        else:
+            await update_stats(user.id, 0)
+            msg = f"❌ Eşleşme yok!\n💀 KAYBETTİN! -{format_amount(amount)}"
+        
         new_bal = await get_balance(user.id)
-        lines.append(f"🏆 {match} tane {mult}x bulundu! ({mult}x)")
-        lines.append(f"🎉 KAZANDIN! +{format_amount(payout - amount)}")
-        lines.append(f"💳 Yeni bakiye: {format_amount(new_bal)}")
-    else:
-        await update_stats(user.id, 0)
-        new_bal = await get_balance(user.id)
-        lines.append(f"💀 3 eşleşme yok! KAYBETTİN!")
-        lines.append(f"💰 Kayıp: -{format_amount(amount)}")
-        lines.append(f"💳 Yeni bakiye: {format_amount(new_bal)}")
-    
-    await update.message.reply_text("\n".join(lines), parse_mode="HTML")
+        
+        await update.message.reply_photo(
+            photo=result_img,
+            caption=f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n{msg}\n💳 Yeni bakiye: {format_amount(new_bal)}",
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        logger.error(f"Kazı Kazan görsel hatası: {e}")
+        # Görsel oluşamazsa mesaj olarak gönder
+        if winner_mult > 0:
+            await add_balance(user.id, payout, "win", f"Kazı Solo {winner_mult}x")
+            await update_stats(user.id, payout)
+            await update.message.reply_text(
+                f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n✅ {winner_mult}x bulundu!\n🎉 KAZANDIN! +{format_amount(payout - amount)}\n💳 Yeni bakiye: {format_amount(new_bal)}",
+                parse_mode="HTML"
+            )
+        else:
+            await update_stats(user.id, 0)
+            await update.message.reply_text(
+                f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n❌ Eşleşme yok!\n💀 KAYBETTİN! -{format_amount(amount)}",
+                parse_mode="HTML"
+            )
 
 
 async def cmd_kazibet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Kazı Kazan turnuvası başlat (PvP)"""
+    """Kazı Kazan Turnuvası başlat"""
     chat_id = update.effective_chat.id
     user = update.effective_user
     
@@ -1833,28 +2098,37 @@ async def cmd_kazibet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ {err}")
         return
     
-    msg = await update.message.reply_text(
-        f"🎟 <b>KAZI KAZAN TURNUVASI BAŞLADI!</b>\n"
+    caption = (
+        f"🎟 <b>KAZI KAZAN TURNUVASI!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"⏱ <b>{BET_WINDOW} saniye</b> içinde katılın!\n\n"
-        f"📌 /kazi &lt;miktar&gt; veya /kazi allin\n\n"
-        f"🎯 Oyun Kuralları:\n"
-        f"• Herkes AYNI kartı kazır\n"
-        f"• 3 eşleşme olursa HERKES kazanır!\n"
-        f"• 3 eşleşme olmazsa HERKES kaybeder!",
-        parse_mode="HTML")
+        f"⏱ <b>{BET_WINDOW} saniye</b> içinde katıl!\n"
+        f"📌 /kazi &lt;miktar&gt;\n"
+        f"🎯 Herkes aynı kartı kazır!\n"
+        f"🏆 3 aynı çarpan = HERKES KAZANIR!"
+    )
+    
+    kapali_kart = os.path.join(BASE_DIR, "kapali.jpg")
+    if os.path.exists(kapali_kart):
+        with open(kapali_kart, "rb") as photo:
+            msg = await update.message.reply_photo(photo=photo, caption=caption, parse_mode="HTML")
+    else:
+        msg = await update.message.reply_text(caption, parse_mode="HTML")
     
     game = await create_game(chat_id, "scratch_tournament", msg.message_id)
-    game["min_bet"] = 0
-    game["pool"] = 0
-    game["players"] = {}
-    game["start_time"] = time.time()
     
+    # Oyun verilerini sakla
+    async with _state_lock:
+        if chat_id in _active_games and game["game_id"] in _active_games[chat_id]:
+            _active_games[chat_id][game["game_id"]]["min_bet"] = 0
+            _active_games[chat_id][game["game_id"]]["pool"] = 0
+            _active_games[chat_id][game["game_id"]]["players"] = {}
+    
+    asyncio.create_task(_scratch_countdown(ctx, chat_id, game["game_id"], msg.message_id))
     asyncio.create_task(_scratch_tournament_timer(ctx, chat_id, game["game_id"]))
 
 
 async def cmd_kazi(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Kazı Kazan turnuvasına katıl"""
+    """Kazı Kazan Turnuvasına katıl"""
     user = update.effective_user
     chat_id = update.effective_chat.id
     
@@ -1862,18 +2136,12 @@ async def cmd_kazi(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
     
     if not ctx.args:
-        await update.message.reply_text(
-            "🎟 <b>KAZI KAZAN TURNUVASI</b>\n"
-            "━━━━━━━━━━━━━━━━━━━━━\n"
-            "📌 Kullanım: <code>/kazi &lt;miktar&gt;</code>\n"
-            "veya <code>/kazi allin</code>\n\n"
-            "💡 Örnek: <code>/kazi 1000</code>",
-            parse_mode="HTML")
+        await update.message.reply_text("❌ Kullanım: /kazi <miktar>")
         return
     
     game = await get_active_game(chat_id, "scratch_tournament")
     if not game or game["state"] != "OPEN":
-        await update.message.reply_text("❌ Açık Kazı Kazan turnuvası yok! /kazibet ile başlatın.")
+        await update.message.reply_text("❌ Açık turnuva yok.")
         return
     
     await get_or_create_user(user.id, user.username, user.full_name)
@@ -1883,119 +2151,152 @@ async def cmd_kazi(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ {err}")
         return
     
-    if not game.get("players"):
-        game["min_bet"] = amount
-    elif amount < game.get("min_bet", 0):
-        await update.message.reply_text(f"❌ En az {format_amount(game['min_bet'])} gerekli.")
-        return
+    # Oyun verilerini al
+    async with _state_lock:
+        game_data = _active_games.get(chat_id, {}).get(game["game_id"])
+        if not game_data:
+            await update.message.reply_text("❌ Oyun bulunamadı.")
+            return
+        
+        players = game_data.get("players", {})
+        min_bet = game_data.get("min_bet", 0)
+        
+        if not players:
+            game_data["min_bet"] = amount
+        elif amount < min_bet:
+            await update.message.reply_text(f"❌ Minimum bahis: {format_amount(min_bet)}")
+            return
     
-    ok = await remove_balance(user.id, amount, "bet", f"Kazı Kazan turnuvası")
+    # Bahsi düş
+    ok = await remove_balance(user.id, amount, "bet", f"Kazi Turnuva {game['game_id']}")
     if not ok:
         await update.message.reply_text("❌ Yetersiz bakiye.")
         return
     
-    if user.id in game["players"]:
-        game["players"][user.id]["bet"] += amount
-        game["players"][user.id]["name"] = user.full_name
-    else:
-        game["players"][user.id] = {"bet": amount, "name": user.full_name}
-    
-    game["pool"] += amount
+    # Oyuncuyu ekle
+    async with _state_lock:
+        game_data = _active_games.get(chat_id, {}).get(game["game_id"])
+        if game_data:
+            if user.id in game_data["players"]:
+                game_data["players"][user.id]["bet"] += amount
+            else:
+                game_data["players"][user.id] = {"bet": amount, "name": user.full_name}
+            game_data["pool"] = game_data.get("pool", 0) + amount
     
     await update.message.reply_text(
-        f"🕹 <b>{user.full_name}</b> 🎟️ {format_amount(amount)}🪙 bahis yaptı",
+        f"🕹 <b>{user.full_name}</b> 🎟️ {format_amount(amount)} ile katıldı.",
         parse_mode="HTML"
     )
 
 
+async def _scratch_countdown(ctx, chat_id, game_id, message_id):
+    """Gerisayım"""
+    for remaining in range(BET_WINDOW, 0, -5):
+        await asyncio.sleep(5)
+        game = await get_active_game(chat_id, "scratch_tournament")
+        if not game or game["game_id"] != game_id or game["state"] != "OPEN":
+            return
+        
+        async with _state_lock:
+            game_data = _active_games.get(chat_id, {}).get(game_id)
+            if not game_data:
+                return
+            players_count = len(game_data.get("players", {}))
+            pool = game_data.get("pool", 0)
+        
+        try:
+            await ctx.bot.edit_message_caption(
+                chat_id=chat_id,
+                message_id=message_id,
+                caption=f"🎟 <b>KAZI KAZAN TURNUVASI</b>\n━━━━━━━━━━━━━━━━━━━━━\n⏱ Kalan: {remaining} sn\n👥 Katılımcı: {players_count}\n💰 Havuz: {format_amount(pool)}",
+                parse_mode="HTML"
+            )
+        except:
+            pass
+
+
 async def _scratch_tournament_timer(ctx, chat_id, game_id):
-    """Bahis süresi bitince kazı kazan oyna"""
+    """Turnuva sonucu hesapla"""
     await asyncio.sleep(BET_WINDOW)
     
     game = await get_active_game(chat_id, "scratch_tournament")
     if not game or game["game_id"] != game_id:
         return
     
-    players = game.get("players", {})
+    # Oyuncuları al
+    async with _state_lock:
+        game_data = _active_games.get(chat_id, {}).get(game_id)
+        if not game_data:
+            return
+        players = game_data.get("players", {}).copy()
     
     if len(players) < 2:
+        # İade yap
+        for uid, d in players.items():
+            await add_balance(uid, d["bet"], "refund", "Kazi Turnuva İptal")
         await ctx.bot.send_message(
             chat_id,
-            "❌ <b>KAZI KAZAN TURNUVASI İPTAL!</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━━\n"
-            f"En az 2 oyuncu gerekli.\n"
-            f"Bahisler iade edildi.",
-            parse_mode="HTML")
-        for uid, data in players.items():
-            await add_balance(uid, data["bet"], "refund", f"Kazı Kazan iade")
+            "❌ <b>KAZI KAZAN TURNUVASI İPTAL!</b>\nEn az 2 oyuncu gerekli. Bahisler iade edildi.",
+            parse_mode="HTML"
+        )
         await finish_game(chat_id, game_id, "iptal")
         await cleanup(chat_id)
         return
     
-    game["state"] = "CALCULATING"
-    
-    # KARTI OLUŞTUR (HERKES İÇİN AYNI)
-    board = [SCRATCH_POOL[secrets.randbelow(len(SCRATCH_POOL))] for _ in range(6)]
+    # Kartları oluştur
+    board = [secrets.choice(SCRATCH_POOL) for _ in range(6)]
     counts = Counter(board)
-    
-    mult = 0
-    match = 0
-    for v, cnt in counts.most_common():
-        if cnt >= 3 and v > 0:
-            mult = v
-            match = cnt
+    winner_mult = 0
+    for mult, count in counts.most_common():
+        if count >= 3 and mult > 0:
+            winner_mult = mult
             break
     
-    pool = game["pool"]
-    players_data = game["players"]
-    
-    # Kart gösterimi
-    line1 = " ".join(f"[{SCRATCH_EMOJI.get(v, '❓')}]" for v in board[:3])
-    line2 = " ".join(f"[{SCRATCH_EMOJI.get(v, '❓')}]" for v in board[3:])
-    
-    lines = [
-        f"🎟 <b>KAZI KAZAN TURNUVASI SONUCU</b>",
-        f"━━━━━━━━━━━━━━━━━━━━━",
-        line1,
-        line2,
-        f"━━━━━━━━━━━━━━━━━━━━━",
-        f"💰 Toplam havuz: {format_amount(pool)}",
-        f"👥 Katılımcı: {len(players_data)} kişi",
-        ""
-    ]
-    
-    if mult > 0:
-        total_payout = 0
-        lines.append(f"🏆 {match} tane {mult}x bulundu! ({mult}x)")
-        lines.append(f"🎉 <b>HERKES KAZANDI!</b> 🎉")
-        lines.append(f"━━━━━━━━━━━━━━━━━━━━━")
+    try:
+        result_img = create_scratch_result_image(board, winner_mult)
+        lines = [f"🎟 <b>KAZI KAZAN SONUCU</b>", "━━━━━━━━━━━━━━━━━━━━━"]
         
-        for uid, data in players_data.items():
-            payout = data["bet"] * mult
-            await add_balance(uid, payout, "win", f"Kazı Kazan turnuvası ({mult}x)")
-            await update_stats(uid, payout)
-            total_payout += payout
-            lines.append(f"✅ {data['name']}: {format_amount(data['bet'])} → {format_amount(payout)} (+{format_amount(payout - data['bet'])})")
+        if winner_mult > 0:
+            lines.append(f"✅ <b>{winner_mult}x</b> eşleşmesi bulundu!\n🎉 <b>HERKES KAZANDI!</b>\n")
+            total_payout = 0
+            for uid, d in players.items():
+                payout = d["bet"] * winner_mult
+                await add_balance(uid, payout, "win", f"Kazi Turnuva {winner_mult}x")
+                await update_stats(uid, payout)
+                lines.append(f"✅ {d['name']}: +{format_amount(payout - d['bet'])}")
+                total_payout += payout
+            lines.append(f"\n💰 Toplam dağıtılan: {format_amount(total_payout)}")
+        else:
+            lines.append(f"❌ Eşleşme yok!\n😢 <b>HERKES KAYBETTİ!</b>\n")
+            for uid, d in players.items():
+                await update_stats(uid, 0)
+                lines.append(f"❌ {d['name']}: -{format_amount(d['bet'])}")
         
-        lines.append(f"━━━━━━━━━━━━━━━━━━━━━")
-        lines.append(f"💰 Toplam dağıtılan: {format_amount(total_payout)}")
-        
-    else:
-        lines.append(f"💀 <b>3 EŞLEŞME YOK!</b>")
-        lines.append(f"😢 <b>HERKES KAYBETTİ!</b> 😢")
-        lines.append(f"━━━━━━━━━━━━━━━━━━━━━")
-        
-        for uid, data in players_data.items():
-            await update_stats(uid, 0)
-            lines.append(f"❌ {data['name']}: -{format_amount(data['bet'])}")
-    
-    lines.append(f"\n🆔 <code>{game_id}</code>")
-    
-    await ctx.bot.send_message(chat_id, "\n".join(lines), parse_mode="HTML")
+        await ctx.bot.send_photo(
+            chat_id,
+            photo=result_img,
+            caption="\n".join(lines),
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        logger.error(f"Kazi turnuva görsel hatası: {e}")
+        # Görsel hatasında mesaj olarak gönder
+        msg = f"🎟 <b>KAZI KAZAN SONUCU</b>\n━━━━━━━━━━━━━━━━━━━━━\n"
+        if winner_mult > 0:
+            msg += f"✅ {winner_mult}x eşleşmesi! HERKES KAZANDI!\n"
+            for uid, d in players.items():
+                payout = d["bet"] * winner_mult
+                await add_balance(uid, payout, "win", f"Kazi Turnuva {winner_mult}x")
+                await update_stats(uid, payout)
+                msg += f"✅ {d['name']}: +{format_amount(payout)}\n"
+        else:
+            msg += f"❌ Eşleşme yok! HERKES KAYBETTİ!\n"
+        await ctx.bot.send_message(chat_id, msg, parse_mode="HTML")
     
     await finish_game(chat_id, game_id, "kazikazan")
     await cleanup(chat_id)
-    
+
+
     
 # ═══════════════════════════════════════════════════════════════
 #  ADMIN KOMUTLARI
