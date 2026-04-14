@@ -56,7 +56,28 @@ def get_font(font_size: int):
     
     print(f"⚠️ Font bulunamadı, default kullanılıyor (boyut: {font_size})")
     return ImageFont.load_default()
+    from PIL import Image, ImageDraw, ImageFont
+import io
+import os
+
+def get_font(size: int):
+    """Railway için font yükle"""
     
+    # Railway sistem fontları
+    fonts = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    ]
+    
+    for font_path in fonts:
+        if os.path.exists(font_path):
+            try:
+                return ImageFont.truetype(font_path, size)
+            except:
+                continue
+    
+    print(f"⚠️ Font bulunamadı!")
+    return ImageFont.load_default()
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -575,14 +596,8 @@ async def get_display_name(uid: int) -> str:
     return str(uid)
 
 def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO:
-    """Transfer görseli - GÖRSELİ KÜÇÜLT"""
-    
     transfer_template = os.path.join(BASE_DIR, "transfer.png")
     
-    if not os.path.exists(transfer_template):
-        raise FileNotFoundError(f"Transfer şablonu bulunamadı: {transfer_template}")
-    
-    # Görseli aç ve küçült
     img = Image.open(transfer_template).convert('RGBA')
     img.thumbnail((800, 600), Image.Resampling.LANCZOS)
     
@@ -590,12 +605,12 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
     txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(txt_layer)
     
-    # Fontlar (küçük görselde normal boyut yeterli)
-    font_isim = get_font(500)
-    font_miktar = get_font(500)
-    font_token = get_font(500)
+    # Dinamik font boyutları
+    font_isim = get_font(int(height * 0.10))
+    font_miktar = get_font(int(height * 0.13))
+    font_token = get_font(int(height * 0.067))
     
-    # Yüzdelik koordinatlar (görsel boyutundan bağımsız)
+    # Yazıları çiz
     draw.text((width * 0.57, height * 0.19), sender, fill="#F5F5F5", font=font_isim, anchor="mm")
     draw.text((width * 0.57, height * 0.53), receiver, fill="#F5F5F5", font=font_isim, anchor="mm")
     
@@ -608,12 +623,13 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
     except:
         pass
     
-    # Birleştir
     img = Image.alpha_composite(img, txt_layer).convert('RGB')
     bio = io.BytesIO()
-    img.save(bio, format='PNG')
+    img.save(bio, format='PNG', quality=95)
     bio.seek(0)
     return bio
+
+
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Başlangıç komutu - Kullanıcıyı kaydeder"""
     user = update.effective_user
@@ -2054,7 +2070,7 @@ async def _wheel_timer(ctx, chat_id, game_id):
 # ═══════════════════════════════════════════════════════════════
 
 # ✅ Görsel yolları düzeltildi - BASE_DIR kullanıyor
-KAPALI_KART_PATH = os.path.join(BASE_DIR, "kapali.jpg")
+KAPALI_KART_PATH = os.path.join(BASE_DIR, "Kapali.jpg")
 ACIK_KART_PATH = os.path.join(BASE_DIR, "acik.jpg")
 
 def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
@@ -2065,27 +2081,25 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     if not os.path.exists(acik_kart):
         raise Exception(f"Açık kart görseli bulunamadı: {acik_kart}")
     
-    # Görseli AÇ
+    # Görseli AÇ ve KÜÇÜLT
     img = Image.open(acik_kart)
-    
-    # ✅ Görseli KÜÇÜLT (telefonda çözülen yöntem)
     img.thumbnail((800, 600), Image.Resampling.LANCZOS)
     
     draw = ImageDraw.Draw(img)
-    
-    # Font bul (artık küçük görselde büyük durur)
-    font = get_font(500)  # 120 bile yeterli olabilir
     
     # Görselin yeni boyutları
     width, height = img.size
     print(f"📐 Yeni görsel boyutu: {width}x{height}")
     
+    # ✅ Dinamik font boyutu (görsele göre ayarlanır)
+    font = get_font(int(height * 0.20))  # Yüksekliğin %20'si
+    
     # Koordinatları yeniden hesapla (görsel küçüldü)
     boxes = [
-        {"center": (width * 0.16, height * 0.25), "index": 0},   # 170/1080 ≈ 0.16
-        {"center": (width * 0.51, height * 0.25), "index": 1},   # 550/1080 ≈ 0.51
-        {"center": (width * 0.83, height * 0.25), "index": 2},   # 900/1080 ≈ 0.83
-        {"center": (width * 0.16, height * 0.69), "index": 3},   # 170/1080, 550/800 ≈ 0.69
+        {"center": (width * 0.16, height * 0.25), "index": 0},
+        {"center": (width * 0.51, height * 0.25), "index": 1},
+        {"center": (width * 0.83, height * 0.25), "index": 2},
+        {"center": (width * 0.16, height * 0.69), "index": 3},
         {"center": (width * 0.51, height * 0.69), "index": 4},
         {"center": (width * 0.83, height * 0.69), "index": 5},
     ]
@@ -2095,12 +2109,13 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
         center_y = int(box["center"][1])
         value = board[box["index"]]
         
+        # Renk seçimi
         if value == winner_mult and winner_mult > 0:
-            text_color = (0, 255, 0)
+            text_color = (0, 255, 0)  # Yeşil (kazanan)
         elif value == 0:
-            text_color = (255, 0, 0)
+            text_color = (255, 0, 0)  # Kırmızı (kayıp)
         else:
-            text_color = (255, 255, 255)
+            text_color = (255, 255, 255)  # Beyaz
         
         text = f"{value}x"
         
@@ -2118,10 +2133,11 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
             stroke_fill=(0, 0, 0)
         )
     
+    # ✅ BytesIO'ya kaydet ve döndür
     bio = io.BytesIO()
-    img.save(bio, format='PNG')
+    img.save(bio, format='PNG', quality=95)
     bio.seek(0)
-    return bio
+    return bio  # ← BURAYI EKLEDİM (eksikti!)
 
 
 async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -2155,7 +2171,7 @@ async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
     
     # Başlangıç görseli (kapalı kart)
-    kapali_kart = os.path.join(BASE_DIR, "kapali.jpg")
+    kapali_kart = os.path.join(BASE_DIR, "Kapali.jpg")
     if os.path.exists(kapali_kart):
         with open(kapali_kart, "rb") as photo:
             await update.message.reply_photo(
