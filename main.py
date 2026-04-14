@@ -655,24 +655,7 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
     return bio
 
 
-async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Başlangıç komutu - Kullanıcıyı kaydeder"""
-    user = update.effective_user
-    
-    # Kullanıcıyı oluştur veya getir
-    u = await get_or_create_user(user.id, user.username, user.full_name)
-    lvl, emoji = get_level(u["balance"])
-    
-    await update.message.reply_text(
-        f"🎰 <b>CasiniBot'a Hoş Geldiniz!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 <b>{user.full_name}</b> [{lvl}] {emoji}\n"
-        f"💳 Başlangıç bakiyeniz: {format_amount(u['balance'])}\n\n"
-        f"🍀 Bol şans!\n"
-        f"📌 Komutlar için /help\n"
-        f"🎮 Oyunlar için /menu",
-        parse_mode="HTML"
-    )
+
     # ═══════════════════════════════════════════════════════════════
 #  GENEL KOMUTLAR
 # ═══════════════════════════════════════════════════════════════
@@ -1111,8 +1094,8 @@ async def cmd_daily(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # ═══════════════════════════════════════════════════════════════
 
 async def cmd_moneys(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Para transferi - Rulet'teki gibi tek mesaj"""
     user = update.effective_user
-    chat_id = update.effective_chat.id
     
     if is_rate_limited(user.id):
         return
@@ -1174,39 +1157,40 @@ async def cmd_moneys(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         "to_id": target.id,
         "amount": amount,
         "type": "transfer",
-        "description": "Para transferi",
         "created_at": datetime.now()
     })
     
     new_bal = await get_balance(user.id)
     
-    # ✅ GÖRSEL OLUŞTUR VE GÖNDER
+    # ✅ RULET'TEKİ GİBİ: Görsel + caption TEK MESAJ
     try:
         sender_name = clean_name(user.full_name)
         receiver_name = clean_name(target.full_name)
-        
         transfer_img = create_transfer_image(sender_name, receiver_name, amount)
         
+        # Tek mesaj: görsel + caption (Rulet'teki gibi)
         await update.message.reply_photo(
             photo=transfer_img,
-            caption=f"✅ <b>Transfer Başarılı!</b>\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"📤 {sender_name} → 📥 {receiver_name}\n"
-                    f"💰 {format_amount(amount)}\n"
-                    f"💳 Yeni bakiyeniz: {format_amount(new_bal)}",
+            caption=(
+                f"✅ <b>Transfer Başarılı!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"📤 {sender_name} → 📥 {receiver_name}\n"
+                f"💰 Miktar: {format_amount(amount)}\n"
+                f"💳 Yeni bakiyeniz: {format_amount(new_bal)}"
+            ),
             parse_mode="HTML"
         )
     except Exception as e:
-        logger.error(f"Transfer görseli oluşturulamadı: {e}")
-        # Görsel oluşamazsa normal mesaj gönder
+        logger.error(f"Transfer görseli hatası: {e}")
+        # Görsel oluşamazsa sadece mesaj gönder
         await update.message.reply_text(
             f"✅ <b>Transfer Başarılı!</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━\n"
             f"📤 {user.full_name} → 📥 {target.full_name}\n"
-            f"💰 {format_amount(amount)}\n"
+            f"💰 Miktar: {format_amount(amount)}\n"
             f"💳 Yeni bakiyeniz: {format_amount(new_bal)}",
             parse_mode="HTML"
-        )
+)
 
 # ═══════════════════════════════════════════════════════════════
 #  RULET (GELİŞMİŞ)
