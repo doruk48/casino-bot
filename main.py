@@ -614,7 +614,24 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
     img.save(bio, format='PNG')
     bio.seek(0)
     return bio
-
+async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Başlangıç komutu - Kullanıcıyı kaydeder"""
+    user = update.effective_user
+    
+    # Kullanıcıyı oluştur veya getir
+    u = await get_or_create_user(user.id, user.username, user.full_name)
+    lvl, emoji = get_level(u["balance"])
+    
+    await update.message.reply_text(
+        f"🎰 <b>CasiniBot'a Hoş Geldiniz!</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 <b>{user.full_name}</b> [{lvl}] {emoji}\n"
+        f"💳 Başlangıç bakiyeniz: {format_amount(u['balance'])}\n\n"
+        f"🍀 Bol şans!\n"
+        f"📌 Komutlar için /help\n"
+        f"🎮 Oyunlar için /menu",
+        parse_mode="HTML"
+    )
 async def cmd_leaderboard(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if is_rate_limited(update.effective_user.id): return
     
