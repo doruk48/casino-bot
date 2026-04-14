@@ -78,8 +78,7 @@ def get_font(size: int):
     
     print(f"⚠️ Font bulunamadı!")
     return ImageFont.load_default()
-
-
+    
 # ═══════════════════════════════════════════════════════════════
 #  AYARLAR
 # ═══════════════════════════════════════════════════════════════
@@ -115,16 +114,36 @@ ACIK_KART_PATH = os.path.join(BASE_DIR, "acik.jpg")
 TRANSFER_TEMPLATE_PATH = os.path.join(BASE_DIR, "transfer.png")
 # Çarkıfelek
 WHEEL_SEGMENTS = [
+    # Tam kayıp PASS - 12 adet
     ("💀 PASS 💀", 0), ("💀 PASS 💀", 0), ("💀 PASS 💀", 0),
     ("💀 PASS 💀", 0), ("💀 PASS 💀", 0), ("💀 PASS 💀", 0),
     ("💀 PASS 💀", 0), ("💀 PASS 💀", 0), ("💀 PASS 💀", 0),
-    ("💀 PASS 💀", 0),
-    ("🟢 2x", 2), ("🟢 2x", 2), ("🟢 2x", 2), ("🟢 2x", 2),
-    ("🟢 5x", 5), ("🟢 5x", 5), ("🟢 5x", 5),
-    ("🔵 10x", 10), ("🔵 10x", 10), ("🔵 10x", 10),
-    ("🔵 25x", 25), ("🔵 25x", 25),
-    ("🟣 50x", 50), ("🟣 100x", 100), ("🟡 250x", 250),
+    ("💀 PASS 💀", 0), ("💀 PASS 💀", 0), ("💀 PASS 💀", 0),
+    
+    # İADE - 12 adet (bahis iade)
+    ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1),
+    ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1),
+    ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1),
+    ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1),
+    
+    # Küçük çarpanlar - 5 adet
+    ("🟢 2x", 2), ("🟢 2x", 2), ("🟢 2x", 2),  # 3 adet 2x
+    ("🟢 3x", 3), ("🟢 3x", 3),  # 2 adet 3x
+    
+    # Orta çarpanlar - 4 adet
+    ("🔵 5x", 5), ("🔵 5x", 5),  # 2 adet 5x
+    ("🔵 10x", 10),  # 1 adet 10x
+    ("🔵 15x", 15),  # 1 adet 15x
+    
+    # Büyük çarpanlar - 3 adet
+    ("🟣 25x", 25),  # 1 adet 25x
+    ("🟣 50x", 50),  # 1 adet 50x
+    ("🟡 100x", 100),  # 1 adet 100x
 ]
+
+# Her oyunda rastgele karıştır
+import random
+random.shuffle(WHEEL_SEGMENTS)
 
 # Kazı Kazan
 SCRATCH_SYMBOLS = [
@@ -153,14 +172,22 @@ STARS_CONFIG = {
 
 # Level
 LEVELS = [
-    (0, "Çırak", "🪵"), (1_000, "Bahisçi", "🎯"),
-    (100_000, "Gümüş", "🥈"), (1_000_000, "Altın", "🥇"),
-    (100_000_000, "Elmas", "💠"), (1_000_000_000, "Milyarder", "💰"),
-    (1_000_000_000_000, "Trilyoner", "💎💰"),
-    (10**18, "Quintillioner", "🌌"), (10**21, "Sextillioner", "🌀"),
-    (10**24, "Septillioner", "🛡️"), (10**27, "Octillioner", "⚔️"),
-    (10**30, "Nonillioner", "🔱"), (10**60, "Kozmik Varlık", "🪐"),
-    (10**100, "MUTLAK TANRI", "👑👑👑"),
+    (0, "Çırak", "🪵"),
+    (1_000, "Bahisçi", "🎯"),
+    (100_000, "Gümüş", "🥈"),
+    (1_000_000, "Altın", "🥇"),
+    (10_000_000, "Platin", "💠"),
+    (100_000_000, "Elmas", "💎"),
+    (1_000_000_000, "Diamond", "💎✨"),
+    (10_000_000_000, "Epic", "👑"),
+    (100_000_000_000, "Grand", "🔱"),
+    (1_000_000_000_000, "Mythic", "🔥"),
+    (10**13, "Legendary", "⭐"),
+    (10**15, "Transcendent", "🌌"),
+    (10**18, "Cosmic", "🪐"),
+    (10**21, "Eternal", "♾️"),
+    (10**24, "Omnipotent", "👑👑"),
+    (10**30, "MUTLAK TANRI", "👑👑👑"),
 ]
 
 # Rulet renkler
@@ -199,8 +226,8 @@ if os.path.exists(ROULETTE_IMG_PATH):
     logger.info(f"✅ Rulet görsel klasörü bulundu: {ROULETTE_IMG_PATH}")
 else:
     logger.warning(f"⚠️ Rulet görsel klasörü bulunamadı: {ROULETTE_IMG_PATH}")
-    
-    
+
+
 # ═══════════════════════════════════════════════════════════════
 #  MONGODB BAĞLANTISI
 # ═══════════════════════════════════════════════════════════════
@@ -212,7 +239,7 @@ async def get_db():
     global _mongo_client, _db
     if _db is None:
         _mongo_client = AsyncIOMotorClient(MONGO_URI)
-        _db = _mongo_client['casinibot']
+        _db = _mongo_client['casinobot']
     return _db
 
 async def init_db():
@@ -226,6 +253,7 @@ async def init_db():
     await db.game_participants.create_index("game_id")
     
     logger.info("🚀 MongoDB bağlantısı kuruldu!")
+    
     
     
 # ═══════════════════════════════════════════════════════════════
@@ -412,12 +440,86 @@ async def update_stats(uid: int, won: int):
             {"telegram_id": uid},
             {"$inc": {"total_won": won, "games_played": 1}, "$set": {"updated_at": datetime.now()}}
         )
+        
+        
+        
+async def update_win_rate(uid: int, game_type: str, won: bool):
+    """Oyuncunun kazanma oranını güncelle"""
+    db = await get_db()
+    
+    stats = await db.user_stats.find_one({"telegram_id": uid})
+    
+    if not stats:
+        stats = {
+            "telegram_id": uid,
+            "rulet_wins": 0, "rulet_total": 0,
+            "blackjack_wins": 0, "blackjack_total": 0,
+            "dice_wins": 0, "dice_total": 0,
+            "wheel_wins": 0, "wheel_total": 0,
+            "scratch_wins": 0, "scratch_total": 0,
+        }
+    
+    # İlgili oyunun istatistiklerini güncelle
+    if game_type == "roulette":
+        stats["rulet_total"] = stats.get("rulet_total", 0) + 1
+        if won:
+            stats["rulet_wins"] = stats.get("rulet_wins", 0) + 1
+        rulet_win_rate = (stats["rulet_wins"] / stats["rulet_total"] * 100) if stats["rulet_total"] > 0 else 0
+        
+    elif game_type == "blackjack":
+        stats["blackjack_total"] = stats.get("blackjack_total", 0) + 1
+        if won:
+            stats["blackjack_wins"] = stats.get("blackjack_wins", 0) + 1
+        blackjack_win_rate = (stats["blackjack_wins"] / stats["blackjack_total"] * 100) if stats["blackjack_total"] > 0 else 0
+        
+    elif game_type == "dice":
+        stats["dice_total"] = stats.get("dice_total", 0) + 1
+        if won:
+            stats["dice_wins"] = stats.get("dice_wins", 0) + 1
+        dice_win_rate = (stats["dice_wins"] / stats["dice_total"] * 100) if stats["dice_total"] > 0 else 0
+        
+    elif game_type == "wheel":
+        stats["wheel_total"] = stats.get("wheel_total", 0) + 1
+        if won:
+            stats["wheel_wins"] = stats.get("wheel_wins", 0) + 1
+        wheel_win_rate = (stats["wheel_wins"] / stats["wheel_total"] * 100) if stats["wheel_total"] > 0 else 0
+        
+    elif game_type == "scratch":
+        stats["scratch_total"] = stats.get("scratch_total", 0) + 1
+        if won:
+            stats["scratch_wins"] = stats.get("scratch_wins", 0) + 1
+        scratch_win_rate = (stats["scratch_wins"] / stats["scratch_total"] * 100) if stats["scratch_total"] > 0 else 0
+    
+    # Toplam kazanma oranını hesapla
+    total_wins = (stats.get("rulet_wins", 0) + stats.get("blackjack_wins", 0) + 
+                  stats.get("dice_wins", 0) + stats.get("wheel_wins", 0) + 
+                  stats.get("scratch_wins", 0))
+    total_games = (stats.get("rulet_total", 0) + stats.get("blackjack_total", 0) + 
+                   stats.get("dice_total", 0) + stats.get("wheel_total", 0) + 
+                   stats.get("scratch_total", 0))
+    total_win_rate = (total_wins / total_games * 100) if total_games > 0 else 0
+    
+    # Veritabanına kaydet
+    await db.user_stats.update_one(
+        {"telegram_id": uid},
+        {"$set": {
+            "rulet_win_rate": rulet_win_rate,
+            "blackjack_win_rate": blackjack_win_rate,
+            "dice_win_rate": dice_win_rate,
+            "wheel_win_rate": wheel_win_rate,
+            "scratch_win_rate": scratch_win_rate,
+            "total_win_rate": total_win_rate,
+            **stats
+        }},
+        upsert=True
+    )
 
 async def get_leaderboard(limit=15) -> list[dict]:
     db = await get_db()
     cursor = db.users.find().sort("balance", -1).limit(limit)
     users = await cursor.to_list(length=limit)
     return users
+    
     
 # ═══════════════════════════════════════════════════════════════
 #  STATE MANAGER & OYUN YÖNETİMİ (MONGODB)
@@ -562,7 +664,10 @@ async def cleanup(chat_id: int):
                 gid: g for gid, g in _active_games[chat_id].items()
                 if g["state"] != "FINISHED"
             }
-
+            
+            
+            
+            
 # ═══════════════════════════════════════════════════════════════
 #  RATE LIMITER
 # ═══════════════════════════════════════════════════════════════
@@ -575,6 +680,8 @@ def is_rate_limited(uid: int) -> bool:
         return True
     _last_cmd[uid] = now
     return False
+    
+    
     
     
 # ═══════════════════════════════════════════════════════════════
@@ -673,24 +780,6 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"🎮 Oyunlar için /menu",
         parse_mode="HTML"
     )
-    # ═══════════════════════════════════════════════════════════════
-#  GENEL KOMUTLAR
-# ═══════════════════════════════════════════════════════════════
-
-async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Başlangıç komutu"""
-    user = update.effective_user
-    u = await get_or_create_user(user.id, user.username, user.full_name)
-    lvl, emoji = get_level(u["balance"])
-    
-    await update.message.reply_text(
-        f"🎰 <b>CasiniBot'a Hoş Geldiniz!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 <b>{user.full_name}</b> [{lvl}] {emoji}\n"
-        f"💳 Bakiyeniz: {format_amount(u['balance'])}\n\n"
-        f"🍀 Bol şans!\n📌 Komutlar için /help",
-        parse_mode="HTML"
-    )
 
 
 async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -726,7 +815,7 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_balance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Bakiye sorgula"""
+    """Bakiye sorgula - Oyun istatistikleriyle"""
     user = update.effective_user
     if is_rate_limited(user.id): return
     
@@ -736,13 +825,49 @@ async def cmd_balance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
     
     lvl, emoji = get_level(u["balance"])
+    
+    # Oyun istatistiklerini al
+    db = await get_db()
+    stats = await db.user_stats.find_one({"telegram_id": user.id})
+    
+    if not stats:
+        # İstatistik yoksa varsayılan değerler
+        rulet_win_rate = 0
+        blackjack_win_rate = 0
+        dice_win_rate = 0
+        wheel_win_rate = 0
+        scratch_win_rate = 0
+        total_win_rate = 0
+    else:
+        # Her oyun için kazanma oranı (% olarak)
+        rulet_win_rate = stats.get("rulet_win_rate", 0)
+        blackjack_win_rate = stats.get("blackjack_win_rate", 0)
+        dice_win_rate = stats.get("dice_win_rate", 0)
+        wheel_win_rate = stats.get("wheel_win_rate", 0)
+        scratch_win_rate = stats.get("scratch_win_rate", 0)
+        
+        # Genel toplam kazanma oranı
+        total_win_rate = stats.get("total_win_rate", 0)
+    
     await update.message.reply_text(
-        f"💳 <b>{user.full_name}</b> [{lvl}] {emoji}\n"
+        f"📌 <b>Verilerim</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"💰 Bakiye: <b>{format_amount(u['balance'])}</b>\n"
-        f"🎮 Oynanan: {u.get('games_played', 0)}",
+        f"👤 {user.full_name}\n"
+        f"🤴 Seviye {lvl} {emoji}\n"
+        f"🏧 Bakiye {format_amount(u['balance'])} 🪙\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"📊 <b>Oyun İstatistikleri</b>\n"
+        f"🎡 Rulet: %{rulet_win_rate}\n"
+        f"🃏 Blackjack: %{blackjack_win_rate}\n"
+        f"🎲 Zar: %{dice_win_rate}\n"
+        f"🎡 Çarkıfelek: %{wheel_win_rate}\n"
+        f"🎟 Kazı Kazan: %{scratch_win_rate}\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🏆 <b>Toplam Kazanma Oranı: %{total_win_rate}</b>",
         parse_mode="HTML"
     )
+
+
 async def cmd_changename(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """İsim değiştir"""
     user = update.effective_user
@@ -853,20 +978,7 @@ async def cmd_moneys(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"💰 {format_amount(amount)}\n"
             f"💳 Yeni bakiyeniz: {format_amount(new_bal)}",
             parse_mode="HTML"
-    )
-
-async def cmd_daily(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Günlük bonus"""
-    user = update.effective_user
-    if is_rate_limited(user.id): return
-    
-    # Bu fonksiyon zaten varsa onu kullan, yoksa basit versiyon
-    await update.message.reply_text(
-        "🎁 <b>GÜNLÜK BONUS</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━━\n"
-        "Bu özellik geçici olarak devre dışı.",
-        parse_mode="HTML"
-    )
+        )
 
 
 async def cmd_leaderboard(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -875,15 +987,24 @@ async def cmd_leaderboard(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     
     rows = await get_leaderboard(LEADERBOARD_SIZE)
     
+    # Grup adını buradan al (örnek: ctx.bot.username veya sabit)
+    group_name = "Casino Bot"  # Burayı grubun adıyla değiştir
+    
+    # Token birimi
+    token_symbol = "🪙"  # Burayı istediğin sembolle değiştir
+    
     medals = ["🥇", "🥈", "🥉"]
-    lines = ["🏆 <b>LİDERLİK TABLOSU</b>", "━━━━━━━━━━━━━━━━━━━━━"]
+    lines = [f"🏆 {group_name} En Zengin 10 Kullanıcı 🏆", "━━━━━━━━━━━━━━━━━━━━━"]
     
     for i, r in enumerate(rows):
-        medal = medals[i] if i < 3 else f"{i+1}."
+        medal = medals[i] if i < 3 else f"{i+1}️⃣"
         name = r.get("display_name", "Bilinmeyen")[:15]
-        lines.append(f"{medal} {name} — {format_amount(r['balance'])}")
+        balance = r['balance']
+        lvl, emoji = get_level(balance)
+        lines.append(f"{medal} {name} ❇️  {format_amount(balance)} {token_symbol} {emoji}{lvl}")
     
     await update.message.reply_text("\n".join(lines), parse_mode="HTML")
+    
     
 # ═══════════════════════════════════════════════════════════════
 #  GÜNLÜK BONUS
@@ -966,109 +1087,10 @@ async def cmd_daily(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"🎯 Yarınki bonus: <b>{format_amount(next_bonus)}</b>",
             parse_mode="HTML"
         )
-
-# ═══════════════════════════════════════════════════════════════
-#  PARA TRANSFERİ
-# ═══════════════════════════════════════════════════════════════
-
-async def cmd_moneys(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    chat_id = update.effective_chat.id
-    
-    if is_rate_limited(user.id):
-        return
-    
-    args = ctx.args
-    reply = update.message.reply_to_message
-    
-    target = None
-    amount_str = ""
-    
-    if reply:
-        target = reply.from_user
-        amount_str = args[0] if args else ""
-    elif len(args) >= 2 and args[0].startswith("@"):
-        username = args[0][1:]
-        db = await get_db()
-        user_data = await db.users.find_one({"username": username})
-        if not user_data:
-            await update.message.reply_text("❌ Kullanıcı bulunamadı.")
-            return
-        target = type('User', (), {'id': user_data['telegram_id'], 'full_name': user_data['display_name']})()
-        amount_str = args[1]
-    elif len(args) >= 2:
-        try:
-            target_id = int(args[0])
-            db = await get_db()
-            user_data = await db.users.find_one({"telegram_id": target_id})
-            if not user_data:
-                await update.message.reply_text("❌ Kullanıcı bulunamadı.")
-                return
-            target = type('User', (), {'id': user_data['telegram_id'], 'full_name': user_data['display_name']})()
-            amount_str = args[1]
-        except:
-            await update.message.reply_text("❌ Kullanım: /moneys <@kullanici> <miktar>")
-            return
-    else:
-        await update.message.reply_text("❌ Kullanım: /moneys <@kullanici> <miktar>")
-        return
-    
-    await get_or_create_user(user.id, user.username, user.full_name)
-    bal = await get_balance(user.id)
-    amount, err = parse_amount(amount_str, bal)
-    if err:
-        await update.message.reply_text(f"❌ {err}")
-        return
-    
-    if amount > bal:
-        await update.message.reply_text(f"❌ Yetersiz bakiye! Mevcut: {format_amount(bal)}")
-        return
-    
-    db = await get_db()
-    
-    # Transfer işlemi
-    await db.users.update_one({"telegram_id": user.id}, {"$inc": {"balance": -amount}})
-    await db.users.update_one({"telegram_id": target.id}, {"$inc": {"balance": amount}})
-    
-    await db.transactions.insert_one({
-        "from_id": user.id,
-        "to_id": target.id,
-        "amount": amount,
-        "type": "transfer",
-        "description": "Para transferi",
-        "created_at": datetime.now()
-    })
-    
-    new_bal = await get_balance(user.id)
-    
-    # ✅ GÖRSEL OLUŞTUR VE GÖNDER
-    try:
-        sender_name = clean_name(user.full_name)
-        receiver_name = clean_name(target.full_name)
         
-        transfer_img = create_transfer_image(sender_name, receiver_name, amount)
         
-        await update.message.reply_photo(
-            photo=transfer_img,
-            caption=f"✅ <b>Transfer Başarılı!</b>\n"
-                    f"━━━━━━━━━━━━━━━━━━━━━\n"
-                    f"📤 {sender_name} → 📥 {receiver_name}\n"
-                    f"💰 {format_amount(amount)}\n"
-                    f"💳 Yeni bakiyeniz: {format_amount(new_bal)}",
-            parse_mode="HTML"
-        )
-    except Exception as e:
-        logger.error(f"Transfer görseli oluşturulamadı: {e}")
-        # Görsel oluşamazsa normal mesaj gönder
-        await update.message.reply_text(
-            f"✅ <b>Transfer Başarılı!</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📤 {user.full_name} → 📥 {target.full_name}\n"
-            f"💰 {format_amount(amount)}\n"
-            f"💳 Yeni bakiyeniz: {format_amount(new_bal)}",
-            parse_mode="HTML"
-        )
-
+        
+        
 # ═══════════════════════════════════════════════════════════════
 #  RULET (GELİŞMİŞ)
 # ═══════════════════════════════════════════════════════════════
@@ -1157,6 +1179,7 @@ async def _roulette_timer(ctx, chat_id, game_id, msg):
         bet = data["bet"]
         bd = data["bet_data"]
         payout = 0
+        won = False
         
         if bd.get("type") == "color":
             if bd.get("color") == color:
@@ -1165,6 +1188,7 @@ async def _roulette_timer(ctx, chat_id, game_id, msg):
                 await add_balance(uid, payout, "win", f"Rulet game:{game_id}")
                 await update_stats(uid, payout)
                 winner_list.append((bd['name'], bd['color'], payout))
+                won = True
             else:
                 await update_stats(uid, 0)
                 
@@ -1176,8 +1200,12 @@ async def _roulette_timer(ctx, chat_id, game_id, msg):
                 await add_balance(uid, payout, "win", f"Rulet game:{game_id}")
                 await update_stats(uid, payout)
                 winner_list.append((bd['name'], None, payout))
+                won = True
             else:
                 await update_stats(uid, 0)
+        
+        # Kazanma oranı güncelle
+        await update_win_rate(uid, "roulette", won)
     
     result_text = f"🆔 GAME ID: <code>{game_id}</code>\n\n"
     result_text += f"🏆 Kazanan Sayı 🔘 {format_number_with_emoji(winning)} {color_emoji}!\n\n"
@@ -1279,7 +1307,9 @@ async def cmd_numbers(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Geçersiz sayı listesi.")
         return
     await _rulet_bet(update, "number", numbers=nums, amount_str=ctx.args[1])
-
+    
+    
+    
 # ═══════════════════════════════════════════════════════════════
 #  VIP KASA (STARS SATIN ALMA)
 # ═══════════════════════════════════════════════════════════════
@@ -1370,6 +1400,7 @@ def get_card_image(card: tuple) -> Image.Image:
         img = img.resize((CARD_WIDTH, CARD_HEIGHT), Image.Resampling.LANCZOS)
         return img
     return Image.new('RGB', (CARD_WIDTH, CARD_HEIGHT), color='#2c2c2c')
+
 def get_face_down_card() -> Image.Image:
     back_path = os.path.join(BJ_IMG_PATH, "back.png")
     if os.path.exists(back_path):
@@ -1502,7 +1533,7 @@ async def _bj_bet_timer(ctx, chat_id, game_id):
     for uid in bj["order"]:
         bj["players"][uid]["hand"] = [deck.pop(), deck.pop()]
         bj["players"][uid]["state"] = "PLAYING"
-        bj["players"][uid]["cards_sent"] = False  # Yeni: kart gönderilmedi olarak işaretle
+        bj["players"][uid]["cards_sent"] = False
     
     bj["dealer"] = [deck.pop(), deck.pop()]
     bj["current"] = 0
@@ -1527,7 +1558,7 @@ async def _bj_bet_timer(ctx, chat_id, game_id):
             caption=f"🃏 <b>{p['name']}</b>\n━━━━━━━━━━━━━━━━━━━━━\n🃏 Eliniz: {_hand_val(p['hand'])}",
             parse_mode="HTML"
         )
-        p["cards_sent"] = True  # Kartlar gönderildi olarak işaretle
+        p["cards_sent"] = True
     
     await _bj_next(ctx, chat_id, game_id)
 
@@ -1550,7 +1581,6 @@ async def _bj_next(ctx, chat_id, game_id):
     
     val = _hand_val(p["hand"])
     
-    # Sadece ilk kez kartları göster
     if not p.get("cards_sent", False):
         hand_img = combine_cards(p["hand"])
         await ctx.bot.send_photo(
@@ -1562,7 +1592,6 @@ async def _bj_next(ctx, chat_id, game_id):
         )
         p["cards_sent"] = True
     else:
-        # Sonraki turlarda sadece mesaj gönder
         await ctx.bot.send_message(
             chat_id,
             f"🃏 <b>{p['name']}</b> sırası!\n━━━━━━━━━━━━━━━━━━━━━\n🃏 Eliniz: {val}\n\n⏱ {BLACKJACK_TURN} saniyen var!",
@@ -1571,7 +1600,7 @@ async def _bj_next(ctx, chat_id, game_id):
         )
     
     p["task"] = asyncio.create_task(_bj_timeout(ctx, chat_id, game_id, uid))
-    
+
 async def _bj_timeout(ctx, chat_id, game_id, uid):
     await asyncio.sleep(BLACKJACK_TURN)
     bj = _bj.get(chat_id)
@@ -1611,21 +1640,16 @@ async def bj_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await query.answer("Sıranız bitti.", show_alert=True)
         return
     
-    # Zamanlayıcıyı iptal et
     if p.get("task"):
         p["task"].cancel()
     
     if action == "bj_hit":
-        # Yeni kart çek
         card = bj["deck"].pop()
         p["hand"].append(card)
         val = _hand_val(p["hand"])
-        
-        # Kart görselini oluştur
         hand_img = combine_cards(p["hand"])
         
         if val > 21:
-            # BUST - Kaybetti
             await query.edit_message_media(
                 media=InputMediaPhoto(
                     media=hand_img,
@@ -1638,7 +1662,6 @@ async def bj_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             await _bj_next(ctx, chat_id, game_id)
             
         elif val == 21:
-            # Blackjack - Otomatik stand
             await query.edit_message_media(
                 media=InputMediaPhoto(
                     media=hand_img,
@@ -1651,7 +1674,6 @@ async def bj_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             await _bj_next(ctx, chat_id, game_id)
             
         else:
-            # Devam ediyor - mevcut mesajı düzenle
             await query.edit_message_media(
                 media=InputMediaPhoto(
                     media=hand_img,
@@ -1660,15 +1682,12 @@ async def bj_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 ),
                 reply_markup=_bj_kb(game_id)
             )
-            # Yeni zamanlayıcı başlat
             p["task"] = asyncio.create_task(_bj_timeout(ctx, chat_id, game_id, user.id))
     
     elif action == "bj_stand":
         hand_val = _hand_val(p["hand"])
         p["state"] = "STAND"
         bj["current"] += 1
-        
-        # Stand yaptığını göster - fotoğrafı düzenle
         hand_img = combine_cards(p["hand"])
         await query.edit_message_media(
             media=InputMediaPhoto(
@@ -1691,10 +1710,13 @@ async def _bj_dealer(ctx, chat_id, game_id):
     await ctx.bot.send_photo(chat_id, photo=dealer_img, caption=f"🎩 KURPİYER\n━━━━━━━━━━━━━━━━━━━━━\n📊 Toplam: {dval}", parse_mode="HTML")
     results = ["🏁 BLACKJACK - FİNAL TABLOSU", "━━━━━━━━━━━━━━━━━━━━━"]
     total_payout = 0
+    
     for uid in bj["order"]:
         p = bj["players"][uid]
         pval = _hand_val(p["hand"])
         bet = p["bet"]
+        won = False
+        
         if p["state"] == "BUST":
             results.append(f"❌ {p['name']}: {pval} (BUST) → -{format_amount(bet)}")
         elif dval > 21:
@@ -1703,17 +1725,24 @@ async def _bj_dealer(ctx, chat_id, game_id):
             await update_stats(uid, payout)
             total_payout += payout
             results.append(f"✅ {p['name']}: {pval} vs {dval} (BUST) → +{format_amount(payout)}")
+            won = True
         elif pval > dval:
             payout = bet * 2
             await add_balance(uid, payout, "win", f"BJ game:{game_id}")
             await update_stats(uid, payout)
             total_payout += payout
             results.append(f"✅ {p['name']}: {pval} vs {dval} → +{format_amount(payout)}")
+            won = True
         elif pval == dval:
             await add_balance(uid, bet, "refund", f"BJ game:{game_id}")
             results.append(f"🤝 {p['name']}: {pval} vs {dval} → İADE")
+            won = True  # İade de kazanç sayılıyor
         else:
             results.append(f"❌ {p['name']}: {pval} vs {dval} → -{format_amount(bet)}")
+        
+        # Kazanma oranı güncelle
+        await update_win_rate(uid, "blackjack", won)
+    
     results.append("━━━━━━━━━━━━━━━━━━━━━")
     results.append(f"🏧 DAĞITILAN TOPLAM: {format_amount(total_payout)}")
     results.append("✨ Yeni oyun için /blackjack yazın!")
@@ -1721,6 +1750,7 @@ async def _bj_dealer(ctx, chat_id, game_id):
     del _bj[chat_id]
     await finish_game(chat_id, game_id, f"dealer:{dval}")
     await cleanup(chat_id)
+    
     
     
 # ═══════════════════════════════════════════════════════════════
@@ -1747,12 +1777,6 @@ async def cmd_dicebet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML")
     
     game = await create_game(chat_id, "dice", msg.message_id)
-    game["min_bet"] = 0
-    game["players_rolled"] = {}
-    game["current_player_index"] = 0
-    game["order"] = []
-    game["pool"] = 0
-    game["participants_data"] = {}
     asyncio.create_task(_dice_bet_timer(ctx, chat_id, game["game_id"]))
 
 async def cmd_dice(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -1761,7 +1785,7 @@ async def cmd_dice(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if is_rate_limited(user.id): return
     
     if not ctx.args:
-        await update.message.reply_text("❌ Kullanım: /dice &lt;miktar&gt;")
+        await update.message.reply_text("❌ Kullanım: /dice <miktar>")
         return
     
     await get_or_create_user(user.id, user.username, user.full_name)
@@ -1841,253 +1865,98 @@ async def _dice_next_player(ctx, chat_id, game_id):
     uid = order[idx]
     parts = game["participants_data"]
     player_name = parts[uid]["bet_data"]["name"]
-    bet = parts[uid]["bet"]
     
-    rolled_list = []
-    for u in order:
-        if u in game["players_rolled"]:
-            rolled_list.append(f"✅ {parts[u]['bet_data']['name']}: {game['players_rolled'][u]}")
-        elif u == uid:
-            rolled_list.append(f"🎯 {player_name}: (Sırada)")
-        else:
-            rolled_list.append(f"⏳ {parts[u]['bet_data']['name']}: (Bekliyor)")
-    
-    status_text = "\n".join(rolled_list)
-    
-    keyboard = [[InlineKeyboardButton("🎲 ZAR AT 🎲", callback_data=f"dice_roll:{game_id}:{uid}")]]
-    
-    await ctx.bot.send_message(
-        chat_id,
-        f"🎲 <b>SIRA SENDE!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 Oyuncu: <b>{player_name}</b>\n"
-        f"💰 Bahis: {format_amount(bet)}\n"
-        f"🎯 Toplam havuz: {format_amount(game['pool'])}\n\n"
-        f"📊 Durum:\n{status_text}\n\n"
-        f"⏱ <b>15 saniyen var!</b>\n"
-        f"⬇️ Zar atmak için butona tıkla ⬇️",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode="HTML"
-    )
-    
-    game["roll_task"] = asyncio.create_task(_dice_roll_timeout(ctx, chat_id, game_id, uid))
-
-async def _dice_roll_timeout(ctx, chat_id, game_id, uid):
-    await asyncio.sleep(15)
-    
-    game = await get_active_game(chat_id, "dice")
-    if not game or game["game_id"] != game_id:
-        return
-    
-    if uid in game["players_rolled"]:
-        return
-    
-    game["players_rolled"][uid] = 2
-    parts = game["participants_data"]
-    player_name = parts[uid]["bet_data"]["name"]
-    
-    await ctx.bot.send_message(
-        chat_id,
-        f"⏰ <b>{player_name}</b> süresinde zar atmadı!\n❌ En düşük puan (2) olarak kaydedildi.",
-        parse_mode="HTML"
-    )
-    
-    game["current_player_index"] += 1
-    await _dice_next_player(ctx, chat_id, game_id)
-
-async def dice_roll_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    
-    try:
-        _, game_id, uid = query.data.split(":", 2)
-        uid = int(uid)
-    except:
-        await query.answer("Hata!", show_alert=True)
-        return
-    
-    user = query.from_user
-    chat_id = query.message.chat_id
-    
-    if user.id != uid:
-        await query.answer("Bu senin sıran değil!", show_alert=True)
-        return
-    
-    game = await get_active_game(chat_id, "dice")
-    if not game or game["game_id"] != game_id:
-        await query.answer("Oyun bitti!", show_alert=True)
-        return
-    
-    if uid in game["players_rolled"]:
-        await query.answer("Zaten zar attın!", show_alert=True)
-        return
-    
-    if game.get("roll_task"):
-        game["roll_task"].cancel()
-    
+    # Zar at
     dice1 = random.randint(1, 6)
     dice2 = random.randint(1, 6)
     total = dice1 + dice2
     
-    game["players_rolled"][uid] = total
-    parts = game["participants_data"]
-    player_name = parts[uid]["bet_data"]["name"]
+    game["players_rolled"][uid] = {
+        "total": total,
+        "dice1": dice1,
+        "dice2": dice2,
+        "name": player_name,
+        "bet": parts[uid]["bet"]
+    }
     
-    await query.message.reply_text(
-        f"🎲 <b>{player_name}</b> zarları attı!\n├─ 1. zar: {dice1}\n├─ 2. zar: {dice2}\n└─ Toplam: <b>{total}</b>",
+    await ctx.bot.send_message(
+        chat_id,
+        f"🎲 <b>{player_name}</b> zar attı!\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🎲 {dice1} + {dice2} = <b>{total}</b>",
         parse_mode="HTML"
     )
     
     game["current_player_index"] += 1
+    await asyncio.sleep(2)  # Her atış arasında 2 saniye bekle
     await _dice_next_player(ctx, chat_id, game_id)
-    
-    try:
-        await query.message.delete()
-    except:
-        pass
 
 async def _dice_calculate_results(ctx, chat_id, game_id):
     game = await get_active_game(chat_id, "dice")
     if not game or game["game_id"] != game_id:
         return
     
-    parts = game["participants_data"]
-    rolled = game["players_rolled"]
+    players = game["players_rolled"]
     pool = game["pool"]
     
-    max_score = max(rolled.values())
-    winners = [uid for uid, score in rolled.items() if score == max_score]
-    share = pool // len(winners)
+    # En yüksek skoru bul
+    max_score = max(p["total"] for p in players.values())
     
-    lines = [
-        f"🎲 <b>ZAR OYUNU SONUÇLARI</b>",
-        f"━━━━━━━━━━━━━━━━━━━━━",
-        f"💰 Toplam havuz: {format_amount(pool)}",
-        f"🏆 En yüksek skor: <b>{max_score}</b>",
-        f"👥 Kazanan sayısı: {len(winners)}",
-        f"━━━━━━━━━━━━━━━━━━━━━",
-        ""
-    ]
+    # En yüksek skoru yapanları bul
+    winners = [(uid, data) for uid, data in players.items() if data["total"] == max_score]
     
-    for uid in winners:
-        player_name = parts[uid]["bet_data"]["name"]
-        bet = parts[uid]["bet"]
-        await add_balance(uid, share, "win", f"Zar kazancı game:{game_id}")
-        await update_stats(uid, share)
-        lines.append(f"✅ {player_name} +{format_amount(share - bet)} (Toplam: {format_amount(share)})")
+    # Kazananlara ödeme yap
+    prize_per_winner = pool // len(winners)
+    remaining = pool - (prize_per_winner * len(winners))
     
-    for uid, data in parts.items():
-        if uid not in winners:
-            player_name = data["bet_data"]["name"]
-            bet = data["bet"]
-            await update_stats(uid, 0)
-            lines.append(f"❌ {player_name} -{format_amount(bet)}")
+    results = ["🎲 <b>ZAR OYUNU SONUÇLARI</b>", "━━━━━━━━━━━━━━━━━━━━━"]
     
-    lines.append(f"\n🆔 <code>{game_id}</code>")
+    # Tüm oyuncuların skorlarını göster
+    for uid, data in players.items():
+        results.append(f"🎲 {data['name']}: {data['total']}")
     
-    await ctx.bot.send_message(chat_id, "\n".join(lines), parse_mode="HTML")
+    results.append("━━━━━━━━━━━━━━━━━━━━━")
     
-    await finish_game(chat_id, game_id, f"max:{max_score}")
-    await cleanup(chat_id)
-    
-    
-# ═══════════════════════════════════════════════════════════════
-#  ÇARKIFELEK
-# ═══════════════════════════════════════════════════════════════
-
-async def cmd_wheelbet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    user = update.effective_user
-    if is_rate_limited(user.id): return
-    
-    ok, err = await can_open_game(chat_id, "wheel")
-    if not ok:
-        await update.message.reply_text(f"❌ {err}")
-        return
-    
-    msg = await update.message.reply_text(
-        f"🎡 <b>ÇARKIFELEK BAŞLADI!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"⏱ <b>{BET_WINDOW} saniye</b>\n\n"
-        f"📌 /wheel &lt;miktar&gt; veya /wheel allin\n\n"
-        f"💀 PASS | 2x | 3x | 5x | 10x | 25x | 50x | 100x | 250x",
-        parse_mode="HTML")
-    
-    game = await create_game(chat_id, "wheel", msg.message_id)
-    asyncio.create_task(_wheel_timer(ctx, chat_id, game["game_id"]))
-
-async def cmd_wheel(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    chat_id = update.effective_chat.id
-    if is_rate_limited(user.id): return
-    
-    if not ctx.args:
-        await update.message.reply_text("❌ Kullanım: /wheel <miktar>")
-        return
-    
-    await get_or_create_user(user.id, user.username, user.full_name)
-    bal = await get_balance(user.id)
-    amount, err = parse_amount(ctx.args[0], bal)
-    if err:
-        await update.message.reply_text(f"❌ {err}")
-        return
-    
-    game = await get_active_game(chat_id, "wheel")
-    if not game or game["state"] != "OPEN":
-        await update.message.reply_text("❌ Açık çarkıfelek yok.")
-        return
-    
-    ok = await remove_balance(user.id, amount, "bet", f"Çark game:{game['game_id']}")
-    if not ok:
-        await update.message.reply_text("❌ Yetersiz bakiye.")
-        return
-    
-    await add_participant(chat_id, game["game_id"], user.id, amount, {"name": user.full_name})
-    bal = await get_balance(user.id)
-    
-    await update.message.reply_text(
-        f"🕹 <b>{user.full_name}</b> 🎡 {format_amount(amount)}🪙 bahis yaptı",
-        parse_mode="HTML")
-
-async def _wheel_timer(ctx, chat_id, game_id):
-    await asyncio.sleep(BET_WINDOW)
-    
-    game = await get_active_game(chat_id, "wheel")
-    if not game or game["game_id"] != game_id:
-        return
-    
-    game["state"] = "CALCULATING"
-    
-    label, mult = secrets.choice(WHEEL_SEGMENTS)
-    parts = await get_participants(chat_id, game_id)
-    
-    lines = [f"🎡 <b>ÇARK DÖNDÜ!</b>", f"━━━━━━━━━━━━━━━━━━━━━",
-             f"🎯 Sonuç: <b>{label}</b>", f"🆔 <code>{game_id}</code>", ""]
-    
-    total_payout = 0
-    
-    if not parts:
-        lines.append("😴 Kimse bahis yapmadı.")
-    elif mult == 0:
-        lines.append("💀 <b>PASS!</b> Herkes kaybetti.")
-        for uid, d in parts.items():
-            await update_stats(uid, 0)
-            lines.append(f"  ❌ {d['bet_data']['name']} -{format_amount(d['bet'])}")
+    if len(winners) == 1:
+        uid, data = winners[0]
+        payout = prize_per_winner + remaining
+        await add_balance(uid, payout, "win", f"Zar game:{game_id}")
+        await update_stats(uid, payout)
+        await update_win_rate(uid, "dice", True)
+        
+        results.append(f"🏆 <b>KAZANAN: {data['name']}</b>")
+        results.append(f"💰 Kazanç: {format_amount(payout)}")
+        
+        # Diğer oyuncular kaybetti
+        for uid2, data2 in players.items():
+            if uid2 != uid:
+                await update_win_rate(uid2, "dice", False)
     else:
-        lines.append(f"🏆 <b>{label} ({mult}x)</b>")
-        for uid, d in parts.items():
-            payout = d["bet"] * mult
-            await add_balance(uid, payout, "win", f"Çark game:{game_id}")
-            await update_stats(uid, payout)
-            total_payout += payout
-            lines.append(f"  ✅ {d['bet_data']['name']} +{format_amount(payout - d['bet'])}")
+        # Beraberlik - havuz bölüşülüyor
+        results.append(f"🤝 <b>BERABERLİK! {len(winners)} kazanan</b>")
+        for uid, data in winners:
+            await add_balance(uid, prize_per_winner, "win", f"Zar game:{game_id} (beraberlik)")
+            await update_stats(uid, prize_per_winner)
+            await update_win_rate(uid, "dice", True)
+            results.append(f"💰 {data['name']}: +{format_amount(prize_per_winner)}")
+        
+        # Kaybedenler için
+        for uid2, data2 in players.items():
+            if uid2 not in [w[0] for w in winners]:
+                await update_win_rate(uid2, "dice", False)
+        
+        if remaining > 0:
+            results.append(f"📦 Kalan: {format_amount(remaining)} (sistemde kaldı)")
     
-    if mult > 0:
-        lines.append(f"\n💰 Toplam dağıtılan: {format_amount(total_payout)}")
+    results.append("━━━━━━━━━━━━━━━━━━━━━")
+    results.append("✨ Yeni oyun için /dicebet")
     
-    await ctx.bot.send_message(chat_id, "\n".join(lines), parse_mode="HTML")
-    await finish_game(chat_id, game_id, label)
+    await ctx.bot.send_message(chat_id, "\n".join(results), parse_mode="HTML")
+    
+    await finish_game(chat_id, game_id, f"kazanan:{len(winners)}")
     await cleanup(chat_id)
+    
+    
     
     
 # ═══════════════════════════════════════════════════════════════
@@ -2162,7 +2031,7 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     bio = io.BytesIO()
     img.save(bio, format='PNG', quality=95)
     bio.seek(0)
-    return bio  # ← BURAYI EKLEDİM (eksikti!)
+    return bio
 
 
 async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -2224,6 +2093,7 @@ async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     try:
         result_img = create_scratch_result_image(board, winner_mult)
         payout = amount * winner_mult if winner_mult > 0 else 0
+        won = winner_mult > 0
         
         if winner_mult > 0:
             await add_balance(user.id, payout, "win", f"Kazı Solo {winner_mult}x")
@@ -2232,6 +2102,9 @@ async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         else:
             await update_stats(user.id, 0)
             msg = f"❌ Eşleşme yok!\n💀 KAYBETTİN! -{format_amount(amount)}"
+        
+        # Kazanma oranı güncelle
+        await update_win_rate(user.id, "scratch", won)
         
         new_bal = await get_balance(user.id)
         
@@ -2246,12 +2119,14 @@ async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         if winner_mult > 0:
             await add_balance(user.id, payout, "win", f"Kazı Solo {winner_mult}x")
             await update_stats(user.id, payout)
+            await update_win_rate(user.id, "scratch", True)
             await update.message.reply_text(
                 f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n✅ {winner_mult}x bulundu!\n🎉 KAZANDIN! +{format_amount(payout - amount)}\n💳 Yeni bakiye: {format_amount(new_bal)}",
                 parse_mode="HTML"
             )
         else:
             await update_stats(user.id, 0)
+            await update_win_rate(user.id, "scratch", False)
             await update.message.reply_text(
                 f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n❌ Eşleşme yok!\n💀 KAYBETTİN! -{format_amount(amount)}",
                 parse_mode="HTML"
@@ -2407,6 +2282,7 @@ async def _scratch_tournament_timer(ctx, chat_id, game_id):
         # İade yap
         for uid, d in players.items():
             await add_balance(uid, d["bet"], "refund", "Kazi Turnuva İptal")
+            await update_win_rate(uid, "scratch", False)  # İptal de kayıp sayılmıyor ama istatistik bozulmasın
         await ctx.bot.send_message(
             chat_id,
             "❌ <b>KAZI KAZAN TURNUVASI İPTAL!</b>\nEn az 2 oyuncu gerekli. Bahisler iade edildi.",
@@ -2425,6 +2301,8 @@ async def _scratch_tournament_timer(ctx, chat_id, game_id):
             winner_mult = mult
             break
     
+    won = winner_mult > 0
+    
     try:
         result_img = create_scratch_result_image(board, winner_mult)
         lines = [f"🎟 <b>KAZI KAZAN SONUCU</b>", "━━━━━━━━━━━━━━━━━━━━━"]
@@ -2436,6 +2314,7 @@ async def _scratch_tournament_timer(ctx, chat_id, game_id):
                 payout = d["bet"] * winner_mult
                 await add_balance(uid, payout, "win", f"Kazi Turnuva {winner_mult}x")
                 await update_stats(uid, payout)
+                await update_win_rate(uid, "scratch", True)
                 lines.append(f"✅ {d['name']}: +{format_amount(payout - d['bet'])}")
                 total_payout += payout
             lines.append(f"\n💰 Toplam dağıtılan: {format_amount(total_payout)}")
@@ -2443,6 +2322,7 @@ async def _scratch_tournament_timer(ctx, chat_id, game_id):
             lines.append(f"❌ Eşleşme yok!\n😢 <b>HERKES KAYBETTİ!</b>\n")
             for uid, d in players.items():
                 await update_stats(uid, 0)
+                await update_win_rate(uid, "scratch", False)
                 lines.append(f"❌ {d['name']}: -{format_amount(d['bet'])}")
         
         await ctx.bot.send_photo(
@@ -2461,22 +2341,145 @@ async def _scratch_tournament_timer(ctx, chat_id, game_id):
                 payout = d["bet"] * winner_mult
                 await add_balance(uid, payout, "win", f"Kazi Turnuva {winner_mult}x")
                 await update_stats(uid, payout)
+                await update_win_rate(uid, "scratch", True)
                 msg += f"✅ {d['name']}: +{format_amount(payout)}\n"
         else:
             msg += f"❌ Eşleşme yok! HERKES KAYBETTİ!\n"
+            for uid, d in players.items():
+                await update_stats(uid, 0)
+                await update_win_rate(uid, "scratch", False)
         await ctx.bot.send_message(chat_id, msg, parse_mode="HTML")
     
     await finish_game(chat_id, game_id, "kazikazan")
     await cleanup(chat_id)
+    
+    
+    
+# ═══════════════════════════════════════════════════════════════
+#  ÇARKIFELEK
+# ═══════════════════════════════════════════════════════════════
 
+async def cmd_wheelbet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    user = update.effective_user
+    if is_rate_limited(user.id): return
+    
+    ok, err = await can_open_game(chat_id, "wheel")
+    if not ok:
+        await update.message.reply_text(f"❌ {err}")
+        return
+    
+    msg = await update.message.reply_text(
+        f"🎡 <b>ÇARKIFELEK BAŞLADI!</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n"
+        f"⏱ <b>{BET_WINDOW} saniye</b>\n\n"
+        f"📌 /wheel &lt;miktar&gt; veya /wheel allin\n\n"
+        f"💀 PASS | 🔄 İADE | 2x | 3x | 5x | 10x | 15x | 25x | 50x | 100x",
+        parse_mode="HTML")
+    
+    game = await create_game(chat_id, "wheel", msg.message_id)
+    asyncio.create_task(_wheel_timer(ctx, chat_id, game["game_id"]))
 
+async def cmd_wheel(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    chat_id = update.effective_chat.id
+    if is_rate_limited(user.id): return
+    
+    if not ctx.args:
+        await update.message.reply_text("❌ Kullanım: /wheel <miktar>")
+        return
+    
+    await get_or_create_user(user.id, user.username, user.full_name)
+    bal = await get_balance(user.id)
+    amount, err = parse_amount(ctx.args[0], bal)
+    if err:
+        await update.message.reply_text(f"❌ {err}")
+        return
+    
+    game = await get_active_game(chat_id, "wheel")
+    if not game or game["state"] != "OPEN":
+        await update.message.reply_text("❌ Açık çarkıfelek yok.")
+        return
+    
+    ok = await remove_balance(user.id, amount, "bet", f"Çark game:{game['game_id']}")
+    if not ok:
+        await update.message.reply_text("❌ Yetersiz bakiye.")
+        return
+    
+    await add_participant(chat_id, game["game_id"], user.id, amount, {"name": user.full_name})
+    bal = await get_balance(user.id)
+    
+    await update.message.reply_text(
+        f"🕹 <b>{user.full_name}</b> 🎡 {format_amount(amount)}🪙 bahis yaptı",
+        parse_mode="HTML")
+
+async def _wheel_timer(ctx, chat_id, game_id):
+    await asyncio.sleep(BET_WINDOW)
+    
+    game = await get_active_game(chat_id, "wheel")
+    if not game or game["game_id"] != game_id:
+        return
+    
+    game["state"] = "CALCULATING"
+    
+    # Her oyunda rastgele karıştır (tahmin edilemez olması için)
+    shuffled_segments = random.sample(WHEEL_SEGMENTS, len(WHEEL_SEGMENTS))
+    label, mult = secrets.choice(shuffled_segments)
+    parts = await get_participants(chat_id, game_id)
+    
+    lines = [f"🎡 <b>ÇARK DÖNDÜ!</b>", f"━━━━━━━━━━━━━━━━━━━━━",
+             f"🎯 Sonuç: <b>{label}</b>", f"🆔 <code>{game_id}</code>", ""]
+    
+    total_payout = 0
+    
+    if not parts:
+        lines.append("😴 Kimse bahis yapmadı.")
+    elif mult == 0:
+        # PASS - tam kayıp
+        lines.append("💀 <b>PASS!</b> Herkes kaybetti.")
+        for uid, d in parts.items():
+            await update_stats(uid, 0)
+            await update_win_rate(uid, "wheel", False)
+            lines.append(f"  ❌ {d['bet_data']['name']} -{format_amount(d['bet'])}")
+    elif mult == 1:
+        # İADE - bahis iade
+        lines.append("🔄 <b>İADE!</b> Bahisler geri ödendi.")
+        for uid, d in parts.items():
+            await add_balance(uid, d["bet"], "refund", f"Çark iade game:{game_id}")
+            await update_stats(uid, 0)
+            await update_win_rate(uid, "wheel", True)  # İade de kazanç sayılıyor
+            lines.append(f"  🔄 {d['bet_data']['name']} +0 (iade)")
+    else:
+        # Kazanç var
+        lines.append(f"🏆 <b>{label} ({mult}x)</b>")
+        for uid, d in parts.items():
+            payout = d["bet"] * mult
+            await add_balance(uid, payout, "win", f"Çark game:{game_id}")
+            await update_stats(uid, payout)
+            await update_win_rate(uid, "wheel", True)
+            total_payout += payout
+            lines.append(f"  ✅ {d['bet_data']['name']} +{format_amount(payout - d['bet'])}")
+    
+    if mult > 0 and mult != 1:
+        lines.append(f"\n💰 Toplam dağıtılan: {format_amount(total_payout)}")
+    
+    await ctx.bot.send_message(chat_id, "\n".join(lines), parse_mode="HTML")
+    await finish_game(chat_id, game_id, label)
+    await cleanup(chat_id)
+    
     
 # ═══════════════════════════════════════════════════════════════
 #  ADMIN KOMUTLARI
 # ═══════════════════════════════════════════════════════════════
 
 async def cmd_addbalance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Admin komutu - Kullanıcıya bakiye ekle"""
+    """Admin komutu - Kullanıcıya bakiye ekle
+    
+    Kullanım şekilleri:
+    1. /addbalance 1000000  (kendine)
+    2. /addbalance 123456789 1000000  (ID ile)
+    3. Reply yaparak: /addbalance 1000000  (yanıtlanan kişiye)
+    """
     user = update.effective_user
     
     if user.id not in ADMIN_IDS:
@@ -2484,30 +2487,50 @@ async def cmd_addbalance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
     
     args = ctx.args
-    if len(args) < 2:
-        await update.message.reply_text(
-            "💸 Kullanım: /addbalance <kullanıcı_id> <miktar>\n"
-            "Örnek: /addbalance 123456789 1000000\n\n"
-            "veya reply yaparak: /addbalance 1000000 (cevapladığınız kişiye)"
-        )
-        return
+    target_id = None
+    amount_str = None
     
-    # Reply ile kullanım
+    # Kullanım şeklini belirle
     if update.message.reply_to_message:
+        # REPLY ile kullanım: /addbalance 1000000
         target_id = update.message.reply_to_message.from_user.id
+        amount_str = args[0] if args else None
+    elif len(args) == 1:
+        # Sadece miktar yazıldı: /addbalance 1000000 (kendine)
+        target_id = user.id
         amount_str = args[0]
-    else:
+    elif len(args) >= 2:
+        # ID ve miktar: /addbalance 123456789 1000000
         try:
             target_id = int(args[0])
             amount_str = args[1]
         except:
             await update.message.reply_text("❌ Geçersiz kullanıcı ID'si!")
             return
+    else:
+        await update.message.reply_text(
+            "💸 <b>KULLANIM ŞEKİLLERİ</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"1️⃣ Kendine ekle: /addbalance 1000000\n"
+            f"2️⃣ ID ile ekle: /addbalance 123456789 1000000\n"
+            f"3️⃣ Reply ile ekle: (mesajı yanıtla) /addbalance 1000000",
+            parse_mode="HTML"
+        )
+        return
     
-    # Miktarı parse et
-    amount, err = parse_amount(amount_str, 10**18)
-    if err:
-        await update.message.reply_text(f"❌ {err}")
+    # Miktarı kontrol et
+    if not amount_str:
+        await update.message.reply_text("❌ Miktar belirtilmedi!")
+        return
+    
+    # Miktarı parse et (admin olduğu için limitsiz)
+    try:
+        amount, err = parse_amount(amount_str, 10**18)
+        if err:
+            await update.message.reply_text(f"❌ {err}")
+            return
+    except:
+        await update.message.reply_text("❌ Geçersiz miktar!")
         return
     
     # Kullanıcıyı kontrol et
@@ -2520,10 +2543,16 @@ async def cmd_addbalance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     # Para ekle
     await add_balance(target_id, amount, "admin", f"Admin tarafından verildi: {amount_str}")
     
+    # Kimin eklediğini belirt
+    if target_id == user.id:
+        kaynak = "Kendinize"
+    else:
+        kaynak = f"{target_user['display_name']} kullanıcısına"
+    
     await update.message.reply_text(
         f"✅ <b>PARA EKLENDİ!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 Kullanıcı: {target_user['display_name']}\n"
+        f"👤 {kaynak}\n"
         f"💰 Miktar: {format_amount(amount)}\n"
         f"💳 Yeni bakiye: {format_amount(await get_balance(target_id))}",
         parse_mode="HTML"
@@ -2579,14 +2608,12 @@ async def cmd_cleanup(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⛔ Bu komutu kullanma yetkiniz yok!")
         return
     
-    global _active_games, _bj, _poker
+    global _active_games, _bj
     
     async with _state_lock:
         _active_games.clear()
     
     _bj.clear()
-    if '_poker' in globals():
-        _poker.clear()
     
     # Veritabanında da temizlik
     db = await get_db()
@@ -2614,6 +2641,21 @@ async def cmd_id(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
+
+async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Admin komutu - Bot istatistikleri"""
+    user = update.effective_user
+    
+    if user.id not in ADMIN_IDS:
+        await update.message.reply_text("⛔ Bu komutu kullanma yetkiniz yok!")
+        return
+    
+    db = await get_db()
+    
+    # İstatistikleri al
+    total_users = await db.users.count_documents({})
+    total_games = await db.games.count_documents({})
+    total_transactions = await db.transactions.count_documents({})
     
     # Aktif oyunlar
     active_games_count = 0
@@ -2636,7 +2678,7 @@ async def cmd_id(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_reklam(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Admin komutu - Tüm gruplara reklam gönder"""
+    """Admin komutu - Botun bulunduğu TÜM gruplara reklam gönder"""
     user = update.effective_user
     
     if user.id not in ADMIN_IDS:
@@ -2648,22 +2690,42 @@ async def cmd_reklam(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "📢 <b>REKLAM KOMUTU</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━\n"
             f"Kullanım: /reklam <mesaj>\n\n"
-            f"Örnek: /reklam 🎰 Casino botumuzu deneyin! @BettMasterrBot",
+            f"Örnek: /reklam 🎰 Casino botumuzu deneyin!\n\n"
+            f"⚠️ Botun üye olduğu TÜM gruplara gönderilir.",
             parse_mode="HTML"
         )
         return
     
     reklam_metni = " ".join(ctx.args)
     
-    # Botun bulunduğu tüm gruplar
-    groups = []
-    async for chat in ctx.bot.get_updates():
-        if chat.message and chat.message.chat.type in ["group", "supergroup"]:
-            groups.append(chat.message.chat.id)
+    # Botun bulunduğu tüm sohbetleri bul
+    db = await get_db()
+    
+    # Yöntem 1: Veritabanında kayıtlı gruplar varsa
+    groups = await db.groups.find({"is_active": True}).to_list(length=1000)
+    
+    # Yöntem 2: Alternatif - get_updates ile son 100 sohbet
+    if not groups:
+        updates = await ctx.bot.get_updates(limit=100)
+        chat_ids = set()
+        for update_obj in updates:
+            if update_obj.message and update_obj.message.chat:
+                chat = update_obj.message.chat
+                if chat.type in ["group", "supergroup"]:
+                    chat_ids.add(chat.id)
+            elif update_obj.callback_query and update_obj.callback_query.message:
+                chat = update_obj.callback_query.message.chat
+                if chat.type in ["group", "supergroup"]:
+                    chat_ids.add(chat.id)
+        
+        groups = [{"chat_id": cid} for cid in chat_ids]
     
     # Her gruba reklam gönder
     gonderilen = 0
-    for group_id in groups:
+    hata = 0
+    
+    for group in groups:
+        group_id = group.get("chat_id") or group.get("_id")
         try:
             await ctx.bot.send_message(
                 group_id,
@@ -2671,67 +2733,25 @@ async def cmd_reklam(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 parse_mode="HTML"
             )
             gonderilen += 1
-            await asyncio.sleep(0.5)  # Rate limit için bekle
-        except:
-            pass
+            await asyncio.sleep(0.3)  # Rate limit koruması
+        except Exception as e:
+            hata += 1
+            logger.error(f"Reklam gönderilemedi {group_id}: {e}")
     
     await update.message.reply_text(
         f"✅ <b>REKLAM GÖNDERİLDİ!</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"📨 Gönderilen grup sayısı: {gonderilen}\n"
-        f"📝 Reklam mesajı: {reklam_metni[:50]}...",
+        f"📨 Başarılı: {gonderilen} grup\n"
+        f"❌ Başarısız: {hata} grup\n"
+        f"📝 Mesaj: {reklam_metni[:50]}...",
         parse_mode="HTML"
     )
-    
     
     
 # ═══════════════════════════════════════════════════════════════
 #  MENÜ SİSTEMİ
 # ═══════════════════════════════════════════════════════════════
-
-async def cmd_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    """Ana menüyü göster"""
-    user = update.effective_user
-    await get_or_create_user(user.id, user.username, user.full_name)
-    bal = await get_balance(user.id)
     
-    keyboard = [
-        [
-            InlineKeyboardButton("🎰 RULET", callback_data="menu_roulette"),
-            InlineKeyboardButton("🃏 BLACKJACK", callback_data="menu_blackjack")
-        ],
-        [
-            InlineKeyboardButton("🎲 ZAR (PvP)", callback_data="menu_dice"),
-            InlineKeyboardButton("🎡 ÇARKIFELEK", callback_data="menu_wheel")
-        ],
-        [
-            InlineKeyboardButton("🎟️ KAZI KAZAN", callback_data="menu_scratch"),
-            InlineKeyboardButton("💰 BAKİYE", callback_data="menu_balance")
-        ],
-        [
-            InlineKeyboardButton("🏆 LİDERLİK", callback_data="menu_leaderboard"),
-            InlineKeyboardButton("🎁 GÜNLÜK BONUS", callback_data="menu_daily")
-        ],
-        [
-            InlineKeyboardButton("🌟 VIP KASA", callback_data="menu_buy"),
-            InlineKeyboardButton("❓ YARDIM", callback_data="menu_help")
-        ],
-        [
-            InlineKeyboardButton("🏠 ANA MENÜ", callback_data="menu_main")
-        ]
-    ]
-    
-    await update.message.reply_text(
-        f"🎮 <b>CASİNİBOT ANA MENÜ</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 {user.full_name}\n"
-        f"💰 Bakiyeniz: {format_amount(bal)}\n\n"
-        f"Aşağıdaki butonlardan bir oyun seçin:",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode="HTML"
-    )
-
-
 async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Menü butonları için callback handler"""
     query = update.callback_query
@@ -2739,48 +2759,91 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     
     user = query.from_user
     data = query.data
-    chat_id = query.message.chat_id
-    message_id = query.message.message_id
+    
+    # Ana menü butonu her yerde aynı
+    ana_menu_button = [[InlineKeyboardButton("🏠 ANA MENÜ", callback_data="menu_main")]]
     
     if data == "menu_roulette":
-        await query.edit_message_text("🎰 Rulet başlatılıyor...")
-        fake_update = update
-        fake_update.message = query.message
-        await cmd_rulet(fake_update, ctx)
-        await query.delete_message()
+        await query.edit_message_text(
+            "🎰 <b>RULET NASIL OYNANIR?</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "1️⃣ /rulet ile oyun başlatın\n"
+            "2️⃣ 25 saniye içinde bahis yapın:\n"
+            "   🔴 /red <miktar> - Kırmızıya bahis\n"
+            "   ⚫ /black <miktar> - Siyaha bahis\n"
+            "   🟢 /green <miktar> - Yeşile bahis (0)\n"
+            "   🔢 /number <sayı> <miktar> - Tek sayı\n"
+            "   🔢 /numbers <1,2,3> <miktar> - Çoklu sayı\n\n"
+            "💰 Çarpanlar: Kırmızı/Siyah 2x, Yeşil 72x, Sayı 36x\n"
+            "🎯 Bol şans!",
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
+            parse_mode="HTML"
+        )
         
     elif data == "menu_blackjack":
-        await query.edit_message_text("🃏 Blackjack başlatılıyor...")
-        fake_update = update
-        fake_update.message = query.message
-        await cmd_blackjack(fake_update, ctx)
-        await query.delete_message()
+        await query.edit_message_text(
+            "🃏 <b>BLACKJACK NASIL OYNANIR?</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "1️⃣ /blackjack ile oyun başlatın\n"
+            "2️⃣ 25 saniye içinde /bj <miktar> ile bahis yapın\n"
+            "3️⃣ Kartlar dağıtılır, sırayla oynarsınız:\n"
+            "   🃏 Hit - Yeni kart al\n"
+            "   ✋ Stand - Kart dur\n\n"
+            "📊 Kurallar:\n"
+            "• 21'e en yakın olan kazanır\n"
+            "• 21'i geçersen kaybedersin\n"
+            "• Kurpiyer 17'de durur\n"
+            "• Kazanırsan 2x alırsın\n\n"
+            "🎯 Bol şans!",
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
+            parse_mode="HTML"
+        )
         
     elif data == "menu_dice":
-        await query.edit_message_text("🎲 Zar oyunu başlatılıyor...")
-        fake_update = update
-        fake_update.message = query.message
-        await cmd_dicebet(fake_update, ctx)
-        await query.delete_message()
+        await query.edit_message_text(
+            "🎲 <b>ZAR OYUNU (PvP) NASIL OYNANIR?</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "1️⃣ /dicebet ile oyun başlatın\n"
+            "2️⃣ 25 saniye içinde /dice <miktar> ile katılın\n"
+            "3️⃣ En az 2 oyuncu gerekir\n"
+            "4️⃣ Herkes zar atar, en yüksek toplam kazanır\n"
+            "5️⃣ Beraberlikte havuz bölüşülür\n\n"
+            "💰 Kazanan tüm havuzu alır!\n"
+            "🎯 Bol şans!",
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
+            parse_mode="HTML"
+        )
         
     elif data == "menu_wheel":
-        await query.edit_message_text("🎡 Çarkıfelek başlatılıyor...")
-        fake_update = update
-        fake_update.message = query.message
-        await cmd_wheelbet(fake_update, ctx)
-        await query.delete_message()
+        await query.edit_message_text(
+            "🎡 <b>ÇARKIFELEK NASIL OYNANIR?</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "1️⃣ /wheelbet ile oyun başlatın\n"
+            "2️⃣ 25 saniye içinde /wheel <miktar> ile bahis yapın\n"
+            "3️⃣ Çark döner ve sonuç belirlenir\n\n"
+            "💰 Kazançlar:\n"
+            "• 💀 PASS → Bahis kaybedilir\n"
+            "• 🔄 İADE → Bahis iade\n"
+            "• 2x, 3x, 5x, 10x, 15x, 25x, 50x, 100x → Bahis × çarpan\n\n"
+            "🎯 Bol şans!",
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
+            parse_mode="HTML"
+        )
         
     elif data == "menu_scratch":
-        keyboard = [[InlineKeyboardButton("◀️ ANA MENÜ", callback_data="menu_main")]]
         await query.edit_message_text(
-            "🎟 <b>KAZI KAZAN</b>\n"
+            "🎟 <b>KAZI KAZAN NASIL OYNANIR?</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
-            "📌 <code>/kazisolo &lt;miktar&gt;</code> - Tek kişilik\n"
-            "📌 <code>/kazibet</code> - Turnuva başlat\n"
-            "📌 <code>/kazi &lt;miktar&gt;</code> - Turnuvaya katıl\n\n"
-            "🏆 Çarpanlar: 2x, 3x, 5x, 10x, 25x, 50x, 100x, 250x\n"
-            "🎯 6 kutuda 3 aynı çarpan = kazanç!",
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            "🎟️ <b>TEK KİŞİLİK</b>\n"
+            "📌 /kazisolo <miktar> - Tek başına oyna\n\n"
+            "🎟️ <b>TURNUVASI</b>\n"
+            "1️⃣ /kazibet - Turnuva başlat\n"
+            "2️⃣ /kazi <miktar> - Turnuvaya katıl (en az 2 kişi)\n\n"
+            "🏆 Kazanma şartı:\n"
+            "6 kutuda 3 aynı çarpan = KAZANÇ!\n\n"
+            "💰 Çarpanlar: 2x, 3x, 5x, 10x, 15x, 25x, 50x, 100x, 250x\n"
+            "🎯 Bol şans!",
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
             parse_mode="HTML"
         )
         
@@ -2788,15 +2851,14 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         u = await get_user(user.id)
         if u:
             lvl, emoji = get_level(u["balance"])
-            keyboard = [[InlineKeyboardButton("◀️ ANA MENÜ", callback_data="menu_main")]]
             await query.edit_message_text(
                 f"💳 <b>{user.full_name}</b> [{lvl}] {emoji}\n"
                 f"━━━━━━━━━━━━━━━━━━━━━\n"
                 f"💰 Bakiye: <b>{format_amount(u['balance'])}</b>\n"
-                f"🎮 Oynanan: {u['games_played']}\n"
-                f"📊 Toplam bahis: {format_amount(u['total_wagered'])}\n"
-                f"🏆 Toplam kazanç: {format_amount(u['total_won'])}",
-                reply_markup=InlineKeyboardMarkup(keyboard),
+                f"🎮 Oynanan oyun: {u.get('games_played', 0)}\n"
+                f"📊 Toplam bahis: {format_amount(u.get('total_wagered', 0))}\n"
+                f"🏆 Toplam kazanç: {format_amount(u.get('total_won', 0))}",
+                reply_markup=InlineKeyboardMarkup(ana_menu_button),
                 parse_mode="HTML"
             )
         else:
@@ -2811,10 +2873,9 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             medal = medals[i] if i < 3 else f"{i+1}."
             name = r.get("display_name", "Bilinmeyen")[:15]
             lines.append(f"{medal} {name} [{lvl}]{emoji} — {format_amount(r['balance'])}")
-        keyboard = [[InlineKeyboardButton("◀️ ANA MENÜ", callback_data="menu_main")]]
         await query.edit_message_text(
             "\n".join(lines),
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
             parse_mode="HTML"
         )
         
@@ -2826,7 +2887,6 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await query.delete_message()
         
     elif data == "menu_buy":
-        keyboard = [[InlineKeyboardButton("◀️ ANA MENÜ", callback_data="menu_main")]]
         await query.edit_message_text(
             "🌟 <b>VIP KASA</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
@@ -2840,12 +2900,11 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "⭐ 1000 Stars → 10.000.000.000.000🪙\n\n"
             "💡 /buy yazarak satın alabilirsiniz!\n"
             "⚠️ Tamamen sanal oyun parasıdır, gerçek para değeri yoktur.",
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
             parse_mode="HTML"
         )
         
     elif data == "menu_help":
-        keyboard = [[InlineKeyboardButton("◀️ ANA MENÜ", callback_data="menu_main")]]
         await query.edit_message_text(
             "🎰 <b>CASİNİBOT KOMUTLAR</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -2872,13 +2931,13 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "🌟 <b>VIP KASA</b>\n"
             "/buy — Telegram Stars ile satın al\n\n"
             "💡 Miktar yerine <code>allin</code> yazarak tüm bakiyeni yatırabilirsin!",
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
             parse_mode="HTML"
         )
         
     elif data == "menu_main":
         bal = await get_balance(user.id)
-        keyboard = [
+        main_keyboard = [
             [
                 InlineKeyboardButton("🎰 RULET", callback_data="menu_roulette"),
                 InlineKeyboardButton("🃏 BLACKJACK", callback_data="menu_blackjack")
@@ -2898,9 +2957,6 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             [
                 InlineKeyboardButton("🌟 VIP KASA", callback_data="menu_buy"),
                 InlineKeyboardButton("❓ YARDIM", callback_data="menu_help")
-            ],
-            [
-                InlineKeyboardButton("🏠 ANA MENÜ", callback_data="menu_main")
             ]
         ]
         await query.edit_message_text(
@@ -2908,12 +2964,13 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"━━━━━━━━━━━━━━━━━━━━━\n"
             f"👤 {user.full_name}\n"
             f"💰 Bakiyeniz: {format_amount(bal)}\n\n"
-            f"Aşağıdaki butonlardan bir oyun seçin:",
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            f"Bir oyun seçin veya bilgi almak için butonlara tıklayın:",
+            reply_markup=InlineKeyboardMarkup(main_keyboard),
             parse_mode="HTML"
         )
-
-
+        
+        
+        
 # ═══════════════════════════════════════════════════════════════
 #  YARDIMCI FONKSİYONLAR
 # ═══════════════════════════════════════════════════════════════
@@ -2962,8 +3019,9 @@ async def backup_task():
                 os.remove(os.path.join(BACKUP_DIR, old))
         except Exception as e:
             logger.error(f"Backup hatası: {e}")
-
-
+            
+            
+            
 # ═══════════════════════════════════════════════════════════════
 #  ANA FONKSİYON
 # ═══════════════════════════════════════════════════════════════
@@ -3000,6 +3058,7 @@ def main():
     app.add_handler(CommandHandler("cleanup", cmd_cleanup))
     app.add_handler(CommandHandler("reklam", cmd_reklam))
     app.add_handler(CommandHandler("id", cmd_id))
+    app.add_handler(CommandHandler("stats", cmd_stats))
     
     # Genel komutlar
     app.add_handler(CommandHandler("start", cmd_start))
@@ -3028,7 +3087,7 @@ def main():
     # Zar
     app.add_handler(CommandHandler("dicebet", cmd_dicebet))
     app.add_handler(CommandHandler("dice", cmd_dice))
-    app.add_handler(CallbackQueryHandler(dice_roll_callback, pattern=r"^dice_roll:"))
+    
     
     # Çark
     app.add_handler(CommandHandler("wheelbet", cmd_wheelbet))
@@ -3053,4 +3112,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
+               
