@@ -575,86 +575,45 @@ async def get_display_name(uid: int) -> str:
     return str(uid)
 
 def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO:
-    """Transfer görseli oluştur - Sistem fontu kullanır"""
+    """Transfer görseli - GÖRSELİ KÜÇÜLT"""
     
     transfer_template = os.path.join(BASE_DIR, "transfer.png")
     
     if not os.path.exists(transfer_template):
         raise FileNotFoundError(f"Transfer şablonu bulunamadı: {transfer_template}")
     
+    # Görseli aç ve küçült
     img = Image.open(transfer_template).convert('RGBA')
+    img.thumbnail((800, 600), Image.Resampling.LANCZOS)
+    
     width, height = img.size
     txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(txt_layer)
     
-    # ✅ SADECE SİSTEM FONTU KULLAN (indirme yok)
-    font_isim = get_font(200)
-    font_miktar = get_font(200)
-    font_token = get_font(200)
+    # Fontlar (küçük görselde normal boyut yeterli)
+    font_isim = get_font(60)
+    font_miktar = get_font(80)
+    font_token = get_font(40)
     
-    # Koordinatlar
-    original_width, original_height = 1024, 700
-    scale_x = width / original_width
-    scale_y = height / original_height
+    # Yüzdelik koordinatlar (görsel boyutundan bağımsız)
+    draw.text((width * 0.57, height * 0.19), sender, fill="#F5F5F5", font=font_isim, anchor="mm")
+    draw.text((width * 0.57, height * 0.53), receiver, fill="#F5F5F5", font=font_isim, anchor="mm")
     
-    text_color = "#F5F5F5"
-    gold_color = "#D4AF37"
-    
-    # Gönderen
-    draw.text((580 * scale_x, 130 * scale_y), sender, fill=text_color, font=font_isim, anchor="mm")
-    
-    # Alıcı
-    draw.text((580 * scale_x, 370 * scale_y), receiver, fill=text_color, font=font_isim, anchor="mm")
-    
-    # Miktar
     amount_text = format_amount(amount).replace(CURRENCY_SYMBOL, "").strip()
-    draw.text((480 * scale_x, 600 * scale_y), amount_text, fill=gold_color, font=font_miktar, anchor="lm")
+    draw.text((width * 0.47, height * 0.86), amount_text, fill="#D4AF37", font=font_miktar, anchor="lm")
     
-    # Token yazısı
     try:
         text_w = draw.textlength(amount_text, font=font_miktar)
-        draw.text((480 * scale_x + text_w + 20, 610 * scale_y), "Token", fill=gold_color, font=font_token, anchor="lm")
+        draw.text((width * 0.47 + text_w + 20, height * 0.87), "Token", fill="#D4AF37", font=font_token, anchor="lm")
     except:
         pass
-
+    
     # Birleştir
     img = Image.alpha_composite(img, txt_layer).convert('RGB')
     bio = io.BytesIO()
     img.save(bio, format='PNG')
     bio.seek(0)
     return bio
-
-async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    u = await get_or_create_user(user.id, user.username, user.full_name)
-    lvl, emoji = get_level(u["balance"])
-    
-    await update.message.reply_text(
-        f"🎰 <b>CasiniBot'a Hoş Geldiniz!</b>\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"👤 <b>{user.full_name}</b> [{lvl}] {emoji}\n"
-        f"💳 Başlangıç bakiyeniz: {format_amount(u['balance'])}\n\n"
-        f"🍀 Bol şans!\n📌 Komutlar için /help",
-        parse_mode="HTML"
-    )
-
-async def cmd_balance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    if is_rate_limited(user.id): return
-    
-    await get_or_create_user(user.id, user.username, user.full_name)
-    u = await get_user(user.id)
-    lvl, emoji = get_level(u["balance"])
-    
-    await update.message.reply_text(
-        f"💳 <b>{user.full_name}</b> [{lvl}] {emoji}\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"💰 Bakiye: <b>{format_amount(u['balance'])}</b>\n"
-        f"🎮 Oynanan: {u['games_played']}\n"
-        f"📊 Toplam bahis: {format_amount(u['total_wagered'])}\n"
-        f"🏆 Toplam kazanç: {format_amount(u['total_won'])}",
-        parse_mode="HTML"
-    )
 
 async def cmd_leaderboard(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if is_rate_limited(update.effective_user.id): return
@@ -1941,47 +1900,49 @@ KAPALI_KART_PATH = os.path.join(BASE_DIR, "kapali.jpg")
 ACIK_KART_PATH = os.path.join(BASE_DIR, "acik.jpg")
 
 def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
-    """Açık kart görseline sonuçları yaz - Sistem fontu kullanır"""
+    """Açık kart görseline sonuçları yaz - GÖRSELİ KÜÇÜLT"""
     
     acik_kart = os.path.join(BASE_DIR, "acik.jpg")
     
     if not os.path.exists(acik_kart):
         raise Exception(f"Açık kart görseli bulunamadı: {acik_kart}")
     
+    # Görseli AÇ
     img = Image.open(acik_kart)
+    
+    # ✅ Görseli KÜÇÜLT (telefonda çözülen yöntem)
+    img.thumbnail((800, 600), Image.Resampling.LANCZOS)
+    
     draw = ImageDraw.Draw(img)
     
-    # ✅ Sadece sistem fontunu kullan (indirme yok)
-    font = get_font(4000)
+    # Font bul (artık küçük görselde büyük durur)
+    font = get_font(120)  # 120 bile yeterli olabilir
     
-    # Görsel boyutlarına göre ölçeklendirme
+    # Görselin yeni boyutları
     width, height = img.size
-    original_width, original_height = 1080, 800
-    scale_x = width / original_width
-    scale_y = height / original_height
+    print(f"📐 Yeni görsel boyutu: {width}x{height}")
     
-    # Kutu Koordinatları
+    # Koordinatları yeniden hesapla (görsel küçüldü)
     boxes = [
-        {"center": (170, 200), "index": 0},
-        {"center": (550, 200), "index": 1},
-        {"center": (900, 200), "index": 2},
-        {"center": (170, 550), "index": 3},
-        {"center": (550, 550), "index": 4},
-        {"center": (900, 550), "index": 5},
+        {"center": (width * 0.16, height * 0.25), "index": 0},   # 170/1080 ≈ 0.16
+        {"center": (width * 0.51, height * 0.25), "index": 1},   # 550/1080 ≈ 0.51
+        {"center": (width * 0.83, height * 0.25), "index": 2},   # 900/1080 ≈ 0.83
+        {"center": (width * 0.16, height * 0.69), "index": 3},   # 170/1080, 550/800 ≈ 0.69
+        {"center": (width * 0.51, height * 0.69), "index": 4},
+        {"center": (width * 0.83, height * 0.69), "index": 5},
     ]
     
     for box in boxes:
-        center_x = int(box["center"][0] * scale_x)
-        center_y = int(box["center"][1] * scale_y)
+        center_x = int(box["center"][0])
+        center_y = int(box["center"][1])
         value = board[box["index"]]
         
-        # Renk belirleme
         if value == winner_mult and winner_mult > 0:
-            text_color = (0, 255, 0)  # Yeşil
+            text_color = (0, 255, 0)
         elif value == 0:
-            text_color = (255, 0, 0)  # Kırmızı
+            text_color = (255, 0, 0)
         else:
-            text_color = (255, 255, 255)  # Beyaz (koyu arkaplan için)
+            text_color = (255, 255, 255)
         
         text = f"{value}x"
         
@@ -1990,9 +1951,8 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
         tw = bbox[2] - bbox[0]
         th = bbox[3] - bbox[1]
         
-        # Yazıyı çiz (kenarlıklı)
         draw.text(
-            (center_x - tw / 2, center_y - th / 2),
+            (center_x - tw/2, center_y - th/2),
             text,
             fill=text_color,
             font=font,
