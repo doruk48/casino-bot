@@ -2092,53 +2092,56 @@ async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await asyncio.sleep(1.5)
     
     # Kazı Kazan mantığı
-board = [secrets.choice(SCRATCH_POOL) for _ in range(6)]
-counts = Counter(board)
-winner_mult = 0
-for mult, count in counts.most_common():
-    if count >= 3 and mult > 0:
-        winner_mult = mult
-        break
+    board = [secrets.choice(SCRATCH_POOL) for _ in range(6)]
+    counts = Counter(board)
+    winner_mult = 0
+    for mult, count in counts.most_common():
+        if count >= 3 and mult > 0:
+            winner_mult = mult
+            break
 
-try:
-    result_img = create_scratch_result_image(board, winner_mult)  # ← 4 boşluk
-    payout = amount * winner_mult if winner_mult > 0 else 0       # ← 4 boşluk
+    try:
+        result_img = create_scratch_result_image(board, winner_mult)
+        payout = amount * winner_mult if winner_mult > 0 else 0
+        
+        if winner_mult > 0:
+            await add_balance(user.id, payout, "win", f"Kazı Solo {winner_mult}x")
+            await update_stats(user.id, payout)
+            msg = f"✅ <b>{winner_mult}x</b> bulundu!\n🎉 KAZANDIN! +{format_amount(payout - amount)}"
+            await update_win_rate(user.id, "scratch", True)
+        else:
+            await update_stats(user.id, 0)
+            msg = f"❌ Eşleşme yok!\n💀 KAYBETTİN! -{format_amount(amount)}"
+            await update_win_rate(user.id, "scratch", False)
+        
+        new_bal = await get_balance(user.id)
+        
+        await update.message.reply_photo(
+            photo=result_img,
+            caption=f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n{msg}\n💳 Yeni bakiye: {format_amount(new_bal)}",
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        logger.error(f"Kazı Kazan görsel hatası: {e}")
+        new_bal = await get_balance(user.id)
+        if winner_mult > 0:
+            await add_balance(user.id, payout, "win", f"Kazı Solo {winner_mult}x")
+            await update_stats(user.id, payout)
+            await update_win_rate(user.id, "scratch", True)
+            await update.message.reply_text(
+                f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n✅ {winner_mult}x bulundu!\n🎉 KAZANDIN! +{format_amount(payout - amount)}\n💳 Yeni bakiye: {format_amount(new_bal)}",
+                parse_mode="HTML"
+            )
+        else:
+            await update_stats(user.id, 0)
+            await update_win_rate(user.id, "scratch", False)
+            await update.message.reply_text(
+                f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n❌ Eşleşme yok!\n💀 KAYBETTİN! -{format_amount(amount)}",
+                parse_mode="HTML"
+        )
+
     
-    if winner_mult > 0:                                           # ← 4 boşluk
-        await add_balance(user.id, payout, "win", f"Kazı Solo {winner_mult}x")  # ← 8 boşluk
-        await update_stats(user.id, payout)                       # ← 8 boşluk
-        msg = f"✅ <b>{winner_mult}x</b> bulundu!\n🎉 KAZANDIN! +{format_amount(payout - amount)}"  # ← 8 boşluk
-        await update_win_rate(user.id, "scratch", True)           # ← 8 boşluk
-    else:                                                         # ← 4 boşluk
-        await update_stats(user.id, 0)                            # ← 8 boşluk
-        msg = f"❌ Eşleşme yok!\n💀 KAYBETTİN! -{format_amount(amount)}"  # ← 8 boşluk
-        await update_win_rate(user.id, "scratch", False)          # ← 8 boşluk
-    
-    new_bal = await get_balance(user.id)                          # ← 4 boşluk
-    
-    await update.message.reply_photo(                             # ← 4 boşluk
-        photo=result_img,                                         # ← 8 boşluk
-        caption=f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n{msg}\n💳 Yeni bakiye: {format_amount(new_bal)}",  # ← 8 boşluk
-        parse_mode="HTML"                                         # ← 8 boşluk
-    )                                                             # ← 4 boşluk
-except Exception as e:                                            # ← 0 boşluk (try ile aynı hizada)
-    logger.error(f"Kazı Kazan görsel hatası: {e}")                # ← 4 boşluk
-    new_bal = await get_balance(user.id)                          # ← 4 boşluk
-    if winner_mult > 0:                                           # ← 4 boşluk
-        await add_balance(user.id, payout, "win", f"Kazı Solo {winner_mult}x")  # ← 8 boşluk
-        await update_stats(user.id, payout)                       # ← 8 boşluk
-        await update_win_rate(user.id, "scratch", True)           # ← 8 boşluk
-        await update.message.reply_text(                          # ← 8 boşluk
-            f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n✅ {winner_mult}x bulundu!\n🎉 KAZANDIN! +{format_amount(payout - amount)}\n💳 Yeni bakiye: {format_amount(new_bal)}",  # ← 12 boşluk
-            parse_mode="HTML"                                     # ← 12 boşluk
-        )                                                         # ← 8 boşluk
-    else:                                                         # ← 4 boşluk
-        await update_stats(user.id, 0)                            # ← 8 boşluk
-        await update_win_rate(user.id, "scratch", False)          # ← 8 boşluk
-        await update.message.reply_text(                          # ← 8 boşluk
-            f"🎟 <b>KAZI KAZAN (SOLO)</b>\n━━━━━━━━━━━━━━━━━━━━━\n❌ Eşleşme yok!\n💀 KAYBETTİN! -{format_amount(amount)}",  # ← 12 boşluk
-            parse_mode="HTML"                                     # ← 12 boşluk
-        )                                                         # ← 8 boşluk
+                                                             # ← 8 boşluk
     
         
         
