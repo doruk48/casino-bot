@@ -1727,23 +1727,33 @@ async def _bj_dealer(ctx, chat_id, game_id):
         bet = p["bet"]
         if p["state"] == "BUST":
             results.append(f"❌ {p['name']}: {pval} (BUST) → -{format_amount(bet)}")
+            # ⬇️ KAYIP için win rate güncelle ⬇️
+            await update_win_rate(uid, "blackjack", False)
         elif dval > 21:
             payout = bet * 2
             await add_balance(uid, payout, "win", f"BJ game:{game_id}")
             await update_stats(uid, payout)
             total_payout += payout
             results.append(f"✅ {p['name']}: {pval} vs {dval} (BUST) → +{format_amount(payout)}")
+            # ⬇️ KAZANÇ için win rate güncelle ⬇️
+            await update_win_rate(uid, "blackjack", True)
         elif pval > dval:
             payout = bet * 2
             await add_balance(uid, payout, "win", f"BJ game:{game_id}")
             await update_stats(uid, payout)
             total_payout += payout
             results.append(f"✅ {p['name']}: {pval} vs {dval} → +{format_amount(payout)}")
+            # ⬇️ KAZANÇ için win rate güncelle ⬇️
+            await update_win_rate(uid, "blackjack", True)
         elif pval == dval:
             await add_balance(uid, bet, "refund", f"BJ game:{game_id}")
             results.append(f"🤝 {p['name']}: {pval} vs {dval} → İADE")
+            # ⬇️ BERABERLİKTE HİÇBİR ŞEY YAPMA! ⬇️
+            pass
         else:
             results.append(f"❌ {p['name']}: {pval} vs {dval} → -{format_amount(bet)}")
+            # ⬇️ KAYIP için win rate güncelle ⬇️
+            await update_win_rate(uid, "blackjack", False)
     results.append("━━━━━━━━━━━━━━━━━━━━━")
     results.append(f"🏧 DAĞITILAN TOPLAM: {format_amount(total_payout)}")
     results.append("✨ Yeni oyun için /blackjack yazın!")
@@ -2098,9 +2108,11 @@ async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             await add_balance(user.id, payout, "win", f"Kazı Solo {winner_mult}x")
             await update_stats(user.id, payout)
             msg = f"✅ <b>{winner_mult}x</b> bulundu!\n🎉 KAZANDIN! +{format_amount(payout - amount)}"
+            await update_win_rate(user_id, "scratch", True)
         else:
             await update_stats(user.id, 0)
             msg = f"❌ Eşleşme yok!\n💀 KAYBETTİN! -{format_amount(amount)}"
+            await update_win_rate(user_id, "scratch", False)
         
         new_bal = await get_balance(user.id)
         
@@ -2307,12 +2319,14 @@ async def _scratch_tournament_timer(ctx, chat_id, game_id):
                 await update_stats(uid, payout)
                 lines.append(f"✅ {d['name']}: +{format_amount(payout - d['bet'])}")
                 total_payout += payout
+                await update_win_rate(uid, "scratch", True)
             lines.append(f"\n💰 Toplam dağıtılan: {format_amount(total_payout)}")
         else:
             lines.append(f"❌ Eşleşme yok!\n😢 <b>HERKES KAYBETTİ!</b>\n")
             for uid, d in players.items():
                 await update_stats(uid, 0)
                 lines.append(f"❌ {d['name']}: -{format_amount(d['bet'])}")
+                await update_win_rate(uid, "scratch", False)
         
         await ctx.bot.send_photo(
             chat_id,
