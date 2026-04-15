@@ -1984,7 +1984,7 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     draw = ImageDraw.Draw(img)
     
     # Font bul (artık küçük görselde büyük durur)
-    font = get_font(150)  # 120 bile yeterli olabilir
+    font = get_font(100)  # 120 bile yeterli olabilir
     
     # Görselin yeni boyutları
     width, height = img.size
@@ -2065,7 +2065,7 @@ async def cmd_kazisolo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
     
     # Başlangıç görseli (kapalı kart)
-    kapali_kart = os.path.join(BASE_DIR, "kapali.jpg")
+    kapali_kart = os.path.join(BASE_DIR, "Kapali.jpg")
     if os.path.exists(kapali_kart):
         with open(kapali_kart, "rb") as photo:
             await update.message.reply_photo(
@@ -2149,7 +2149,7 @@ async def cmd_kazibet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"🏆 3 aynı çarpan = HERKES KAZANIR!"
     )
     
-    kapali_kart = os.path.join(BASE_DIR, "kapali.jpg")
+    kapali_kart = os.path.join(BASE_DIR, "Kapali.jpg")
     if os.path.exists(kapali_kart):
         with open(kapali_kart, "rb") as photo:
             msg = await update.message.reply_photo(photo=photo, caption=caption, parse_mode="HTML")
