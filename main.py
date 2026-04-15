@@ -444,64 +444,27 @@ async def update_stats(uid: int, won: int):
         
         
 async def update_win_rate(uid: int, game_type: str, won: bool):
-    """Oyuncunun kazanma oranını güncelle - SADECE ilgili oyun"""
-    db = await get_db()
+    """Win rate güncelle - Minimal versiyon"""
+    try:
+        db = await get_db()
+        
+        # Basitçe sayıları artır
+        if won:
+            await db.user_stats.update_one(
+                {"telegram_id": uid},
+                {"$inc": {f"{game_type}_total": 1, f"{game_type}_wins": 1}},
+                upsert=True
+            )
+        else:
+            await db.user_stats.update_one(
+                {"telegram_id": uid},
+                {"$inc": {f"{game_type}_total": 1}},
+                upsert=True
+            )
+    except Exception as e:
+        logger.error(f"Win rate güncellenemedi: {e}")
+        # Hata olursa sessizce geç, bot çalışmaya devam etsin
     
-    # Oyun tipini veritabanındaki alan adına çevir
-    game_map = {
-        "roulette": "rulet",
-        "blackjack": "blackjack",
-        "dice": "dice",
-        "wheel": "wheel",
-        "scratch": "scratch"
-    }
-    
-    game = game_map.get(game_type, game_type)
-    
-    # İstatistikleri güncelle
-    if won:
-        await db.user_stats.update_one(
-            {"telegram_id": uid},
-            {
-                "$inc": {f"{game}_total": 1, f"{game}_wins": 1},
-                "$setOnInsert": {
-                    "telegram_id": uid,
-                    "rulet_wins": 0, "rulet_total": 0,
-                    "blackjack_wins": 0, "blackjack_total": 0,
-                    "dice_wins": 0, "dice_total": 0,
-                    "wheel_wins": 0, "wheel_total": 0,
-                    "scratch_wins": 0, "scratch_total": 0,
-                }
-            },
-            upsert=True
-        )
-    else:
-        await db.user_stats.update_one(
-            {"telegram_id": uid},
-            {
-                "$inc": {f"{game}_total": 1},
-                "$setOnInsert": {
-                    "telegram_id": uid,
-                    "rulet_wins": 0, "rulet_total": 0,
-                    "blackjack_wins": 0, "blackjack_total": 0,
-                    "dice_wins": 0, "dice_total": 0,
-                    "wheel_wins": 0, "wheel_total": 0,
-                    "scratch_wins": 0, "scratch_total": 0,
-                }
-            },
-            upsert=True
-        )
-    
-    # Yeni win rate'i hesapla ve güncelle
-    stats = await db.user_stats.find_one({"telegram_id": uid})
-    wins = stats.get(f"{game}_wins", 0)
-    total = stats.get(f"{game}_total", 0)
-    new_rate = (wins / total * 100) if total > 0 else 0
-    
-    await db.user_stats.update_one(
-        {"telegram_id": uid},
-        {"$set": {f"{game}_win_rate": new_rate}}
-    )
             
 
 async def get_leaderboard(limit=15) -> list[dict]:
