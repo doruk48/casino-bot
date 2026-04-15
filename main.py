@@ -1964,7 +1964,7 @@ async def _dice_calculate_results(ctx, chat_id, game_id):
 # ═══════════════════════════════════════════════════════════════
 
 # ✅ Görsel yolları düzeltildi - BASE_DIR kullanıyor
-KAPALI_KART_PATH = os.path.join(BASE_DIR, "kapali.jpg")
+KAPALI_KART_PATH = os.path.join(BASE_DIR, "Kapali.jpg")
 ACIK_KART_PATH = os.path.join(BASE_DIR, "acik.jpg")
 
 def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
@@ -1984,7 +1984,7 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     draw = ImageDraw.Draw(img)
     
     # Font bul (artık küçük görselde büyük durur)
-    font = get_font(500)  # 120 bile yeterli olabilir
+    font = get_font(150)  # 120 bile yeterli olabilir
     
     # Görselin yeni boyutları
     width, height = img.size
