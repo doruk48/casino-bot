@@ -444,75 +444,65 @@ async def update_stats(uid: int, won: int):
         
         
 async def update_win_rate(uid: int, game_type: str, won: bool):
-    """Oyuncunun kazanma oranını güncelle"""
+    """Oyuncunun kazanma oranını güncelle - SADECE ilgili oyun"""
     db = await get_db()
     
+    # Oyun tipini veritabanındaki alan adına çevir
+    game_map = {
+        "roulette": "rulet",
+        "blackjack": "blackjack",
+        "dice": "dice",
+        "wheel": "wheel",
+        "scratch": "scratch"
+    }
+    
+    game = game_map.get(game_type, game_type)
+    
+    # İstatistikleri güncelle
+    if won:
+        await db.user_stats.update_one(
+            {"telegram_id": uid},
+            {
+                "$inc": {f"{game}_total": 1, f"{game}_wins": 1},
+                "$setOnInsert": {
+                    "telegram_id": uid,
+                    "rulet_wins": 0, "rulet_total": 0,
+                    "blackjack_wins": 0, "blackjack_total": 0,
+                    "dice_wins": 0, "dice_total": 0,
+                    "wheel_wins": 0, "wheel_total": 0,
+                    "scratch_wins": 0, "scratch_total": 0,
+                }
+            },
+            upsert=True
+        )
+    else:
+        await db.user_stats.update_one(
+            {"telegram_id": uid},
+            {
+                "$inc": {f"{game}_total": 1},
+                "$setOnInsert": {
+                    "telegram_id": uid,
+                    "rulet_wins": 0, "rulet_total": 0,
+                    "blackjack_wins": 0, "blackjack_total": 0,
+                    "dice_wins": 0, "dice_total": 0,
+                    "wheel_wins": 0, "wheel_total": 0,
+                    "scratch_wins": 0, "scratch_total": 0,
+                }
+            },
+            upsert=True
+        )
+    
+    # Yeni win rate'i hesapla ve güncelle
     stats = await db.user_stats.find_one({"telegram_id": uid})
+    wins = stats.get(f"{game}_wins", 0)
+    total = stats.get(f"{game}_total", 0)
+    new_rate = (wins / total * 100) if total > 0 else 0
     
-    if not stats:
-        stats = {
-            "telegram_id": uid,
-            "rulet_wins": 0, "rulet_total": 0,
-            "blackjack_wins": 0, "blackjack_total": 0,
-            "dice_wins": 0, "dice_total": 0,
-            "wheel_wins": 0, "wheel_total": 0,
-            "scratch_wins": 0, "scratch_total": 0,
-        }
-    
-    # İlgili oyunun istatistiklerini güncelle
-    if game_type == "roulette":
-        stats["rulet_total"] = stats.get("rulet_total", 0) + 1
-        if won:
-            stats["rulet_wins"] = stats.get("rulet_wins", 0) + 1
-        rulet_win_rate = (stats["rulet_wins"] / stats["rulet_total"] * 100) if stats["rulet_total"] > 0 else 0
-        
-    elif game_type == "blackjack":
-        stats["blackjack_total"] = stats.get("blackjack_total", 0) + 1
-        if won:
-            stats["blackjack_wins"] = stats.get("blackjack_wins", 0) + 1
-        blackjack_win_rate = (stats["blackjack_wins"] / stats["blackjack_total"] * 100) if stats["blackjack_total"] > 0 else 0
-        
-    elif game_type == "dice":
-        stats["dice_total"] = stats.get("dice_total", 0) + 1
-        if won:
-            stats["dice_wins"] = stats.get("dice_wins", 0) + 1
-        dice_win_rate = (stats["dice_wins"] / stats["dice_total"] * 100) if stats["dice_total"] > 0 else 0
-        
-    elif game_type == "wheel":
-        stats["wheel_total"] = stats.get("wheel_total", 0) + 1
-        if won:
-            stats["wheel_wins"] = stats.get("wheel_wins", 0) + 1
-        wheel_win_rate = (stats["wheel_wins"] / stats["wheel_total"] * 100) if stats["wheel_total"] > 0 else 0
-        
-    elif game_type == "scratch":
-        stats["scratch_total"] = stats.get("scratch_total", 0) + 1
-        if won:
-            stats["scratch_wins"] = stats.get("scratch_wins", 0) + 1
-        scratch_win_rate = (stats["scratch_wins"] / stats["scratch_total"] * 100) if stats["scratch_total"] > 0 else 0
-    
-    # Toplam kazanma oranını hesapla
-    total_wins = (stats.get("rulet_wins", 0) + stats.get("blackjack_wins", 0) + 
-                  stats.get("dice_wins", 0) + stats.get("wheel_wins", 0) + 
-                  stats.get("scratch_wins", 0))
-    total_games = (stats.get("rulet_total", 0) + stats.get("blackjack_total", 0) + 
-                   stats.get("dice_total", 0) + stats.get("wheel_total", 0) + 
-                   stats.get("scratch_total", 0))
-    total_win_rate = (total_wins / total_games * 100) if total_games > 0 else 0
-    
-    # Veritabanına kaydet
     await db.user_stats.update_one(
         {"telegram_id": uid},
-        {"$set": {
-            "rulet_win_rate": rulet_win_rate,
-            "blackjack_win_rate": blackjack_win_rate,
-            "dice_win_rate": dice_win_rate,
-            "wheel_win_rate": wheel_win_rate,
-            "scratch_win_rate": scratch_win_rate,
-            "total_win_rate": total_win_rate,
-            **stats
-        }},
-        upsert=True
+        {"$set": {f"{game}_win_rate": new_rate}}
     )
+            
 
 async def get_leaderboard(limit=15) -> list[dict]:
     db = await get_db()
