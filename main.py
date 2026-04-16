@@ -308,6 +308,47 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
+
+
+async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Admin Özel: Botun genel istatistiklerini gösterir"""
+    user = update.effective_user
+    
+    # Senin sistemindeki admin kontrolü
+    if user.id not in ADMIN_IDS:
+        return
+
+    db = await get_db()
+    
+    # Verileri topla
+    total_users = await db.users.count_documents({})
+    
+    # Toplam bakiye ve istatistikler için aggregation (toplama)
+    pipeline = [
+        {
+            "$group": {
+                "_id": None,
+                "total_bal": {"$sum": "$balance"},
+                "total_games": {"$sum": {"$ifNull": ["$games_played", 0]}},
+                "total_won": {"$sum": {"$ifNull": ["$total_won", 0]}}
+            }
+        }
+    ]
+    
+    stats_res = await db.users.aggregate(pipeline).to_list(length=1)
+    stats = stats_res[0] if stats_res else {"total_bal": 0, "total_games": 0, "total_won": 0}
+
+    text = (
+        "📊 <b>CASINIBOT GENEL İSTATİSTİKLER</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        f"👤 <b>Toplam Kullanıcı:</b> {total_users}\n"
+        f"💰 <b>Dolaşımdaki Toplam Para:</b> {format_amount(stats['total_bal'])}\n"
+        f"🎮 <b>Oynanan Toplam Oyun:</b> {stats['total_games']}\n"
+        f"🏆 <b>Dağıtılan Toplam Kazanç:</b> {format_amount(stats['total_won'])}\n"
+        "━━━━━━━━━━━━━━━━━━━━━"
+    )
+    
+    await update.message.reply_text(text, parse_mode="HTML")
 async def cmd_balance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if is_rate_limited(user.id): return
