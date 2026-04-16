@@ -1058,38 +1058,30 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ {err}")
         return
 
-    # 🎯 oyun oluştur
-    game = await create_game(chat_id, "roulette", None)
+    spin_img_path = os.path.join(ROULETTE_IMG_PATH, "spin.jpg")
 
     caption = (
         f"🎰 <b>AVRUPA RULETİ BAŞLADI!</b>\n"
-        f"🆔 GAME ID: <code>{game['game_id']}</code>\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"⏱ <b>{BET_WINDOW} saniye</b> bahis süresi!\n\n"
+        f"⏱ <b>{BET_WINDOW} saniye</b> içinde bahis yapın!\n\n"
         f"🔴 /red <miktar>\n"
         f"⚫ /black <miktar>\n"
         f"🟢 /green <miktar>\n"
         f"🔢 /number <0-36> <miktar>\n"
-        f"🔢 /numbers <1,2,3> <miktar>"
+        f"🔢 /numbers <1,2,3,...> <miktar>"
     )
 
-    spin_img = os.path.join(ROULETTE_IMG_PATH, "spin.jpg")
-
-    # 🎯 spin mesajı (orijinal davranış)
     try:
-        if os.path.exists(spin_img):
-            with open(spin_img, "rb") as photo:
-                msg = await update.message.reply_photo(
-                    photo=photo,
-                    caption=caption,
-                    parse_mode="HTML"
-                )
+        if os.path.exists(spin_img_path):
+            with open(spin_img_path, "rb") as photo:
+                msg = await update.message.reply_photo(photo=photo, caption=caption, parse_mode="HTML")
         else:
             msg = await update.message.reply_text(caption, parse_mode="HTML")
-    except Exception:
+    except Exception as e:
+        logger.error(f"Spin görseli gönderilemedi: {e}")
         msg = await update.message.reply_text(caption, parse_mode="HTML")
 
-    # 🎯 timer başlat
+    game = await create_game(chat_id, "roulette", msg.message_id)
     asyncio.create_task(_roulette_timer(ctx, chat_id, game["game_id"], msg))
 
 
@@ -1106,61 +1098,77 @@ async def _roulette_timer(ctx, chat_id, game_id, msg):
     color = ROUL_COLORS[winning]
     color_emoji = ROUL_EMOJI[color]
 
-    # 🎯 spin mesajını sil (orijinal akış)
     try:
         await ctx.bot.delete_message(chat_id, msg.message_id)
     except:
         pass
 
     parts = await get_participants(chat_id, game_id)
+
     winner_list = []
 
     for uid, data in parts.items():
-        for item in data.get("bets", []):
+
+        # 🔥 MULTI-BET FIX (KRİTİK KISIM)
+        bets = data.get("bets")
+
+        # eski sistem fallback (bozulmasın diye)
+        if not bets:
+            bets = [{
+                "bet": data.get("bet", 0),
+                "bet_data": data.get("bet_data", {})
+            }]
+
+        for item in bets:
             bet = item["bet"]
             bd = item["bet_data"]
 
             payout = 0
             won = False
 
-            # 🔴 COLOR
+            # 🔴 COLOR BET
             if bd.get("type") == "color":
                 if bd.get("color") == color:
                     multiplier = ROULETTE_MULTIPLIERS.get(color, 2)
                     payout = bet * multiplier
-                    await add_balance(uid, payout, "win", f"roulette:{game_id}")
-                    winner_list.append((bd.get("name"), color, payout))
+                    await add_balance(uid, payout, "win", f"Rulet game:{game_id}")
+                    await update_stats(uid, payout)
+                    winner_list.append((bd.get("name"), bd.get("color"), payout))
                     won = True
 
-            # 🔢 NUMBER
+            # 🔢 NUMBER BET
             elif bd.get("type") == "number":
-                if winning in bd.get("numbers", []):
-                    per = bet // len(bd["numbers"])
-                    payout = per * 35
-                    await add_balance(uid, payout, "win", f"roulette:{game_id}")
+                numbers = bd.get("numbers", [])
+                if numbers and winning in numbers:
+                    per_number_bet = bet // len(numbers)
+                    multiplier = ROULETTE_MULTIPLIERS.get("number", 35)
+                    payout = per_number_bet * multiplier
+                    await add_balance(uid, payout, "win", f"Rulet game:{game_id}")
+                    await update_stats(uid, payout)
                     winner_list.append((bd.get("name"), None, payout))
                     won = True
 
             await update_win_rate(uid, "roulette", won)
 
-    # 🎯 sonuç mesajı
-    result_text = (
-        f"🎰 <b>RULET SONUÇLANDI!</b>\n"
-        f"🆔 GAME ID: <code>{game_id}</code>\n\n"
-        f"🏆 Kazanan Sayı: {format_number_with_emoji(winning)} {color_emoji}\n\n"
-    )
+    # 🏆 RESULT TEXT (AYNEN KORUNDU)
+    result_text = f"🆔 GAME ID: <code>{game_id}</code>\n\n"
+    result_text += f"🏆 Kazanan Sayı 🔘 {format_number_with_emoji(winning)} {color_emoji}!\n\n"
+    result_text += f"🏧 Kazanan Kişiler 🔘\n"
 
     if winner_list:
-        result_text += "🏧 <b>Kazananlar:</b>\n"
         winner_list.sort(key=lambda x: x[2], reverse=True)
 
-        for i, (name, c, payout) in enumerate(winner_list[:15], 1):
-            emoji = ROUL_EMOJI.get(c, color_emoji)
-            result_text += f"{get_rank_emoji(i)} {name} {emoji} {format_amount(payout)}🪙\n"
-    else:
-        result_text += "💀 <b>Kazanan olmadı!</b>\n"
+        for i, (name, win_color, payout) in enumerate(winner_list[:15], 1):
+            rank_emoji = get_rank_emoji(i)
 
-    # 🎯 sonuç görseli
+            if win_color:
+                win_color_emoji = ROUL_EMOJI.get(win_color, "")
+                result_text += f" {rank_emoji} {name} {win_color_emoji} {format_amount(payout)}🪙\n"
+            else:
+                result_text += f" {rank_emoji} {name} {color_emoji} {format_amount(payout)}🪙\n"
+    else:
+        result_text += " 💀 Kazanan olmadı!\n"
+
     try:
         img_path = get_roulette_image(winning)
         if os.path.exists(img_path):
@@ -1168,7 +1176,8 @@ async def _roulette_timer(ctx, chat_id, game_id, msg):
                 await ctx.bot.send_photo(chat_id, photo=photo, caption=result_text, parse_mode="HTML")
         else:
             await ctx.bot.send_message(chat_id, result_text, parse_mode="HTML")
-    except:
+    except Exception as e:
+        logger.error(f"Rulet sonuç görseli gönderilemedi: {e}")
         await ctx.bot.send_message(chat_id, result_text, parse_mode="HTML")
 
     await finish_game(chat_id, game_id, str(winning))
