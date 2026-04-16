@@ -527,8 +527,6 @@ async def cmd_id(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
-ll
-
 async def cmd_reklam(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Admin Özel: Tüm kullanıcılara duyuru gönderir"""
     if update.effective_user.id not in ADMIN_IDS: return
