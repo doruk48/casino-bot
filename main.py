@@ -492,8 +492,67 @@ async def cmd_leaderboard(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         balance = r['balance']
         lvl, emoji = get_level(balance)
         lines.append(f"{medal} {name} ❇️  {format_amount(balance)} {token_symbol} {emoji}{lvl}")
-    
     await update.message.reply_text("\n".join(lines), parse_mode="HTML")
+
+
+# ═══════════════════════════════════════════════════════════════
+#  EKSİK VE SİLİNEN KOMUTLAR (GERİ YÜKLEME)
+# ═══════════════════════════════════════════════════════════════
+
+async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Senin orijinal yardım menün"""
+    help_text = (
+        "❓ <b>YARDIM MENÜSÜ</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n"
+        "🎰 <b>Oyunlar:</b>\n"
+        "• <code>/rulet</code> - Rulet başlatır\n"
+        "• <code>/bj</code> - Blackjack oynatır\n"
+        "• <code>/dicebet</code> - Zar bahsi açar\n"
+        "• <code>/wheelbet</code> - Çarkıfelek\n"
+        "• <code>/kazibet</code> - Kazı kazan\n\n"
+        "💰 <b>Genel:</b>\n"
+        "• <code>/balance</code> - Bakiyeni gösterir\n"
+        "• <code>/leaderboard</code> - En zenginleri listeler\n"
+        "• <code>/moneys</code> - Para transferi yapar\n"
+        "• <code>/menu</code> - Görsel ana menüyü açar\n"
+        "━━━━━━━━━━━━━━━━━━━━━"
+    )
+    await update.message.reply_text(help_text, parse_mode="HTML")
+
+async def cmd_id(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Kullanıcı ve Grup ID'sini gösteren orijinal fonksiyon"""
+    await update.message.reply_text(
+        f"👤 <b>Kullanıcı ID:</b> <code>{update.effective_user.id}</code>\n"
+        f"👥 <b>Grup ID:</b> <code>{update.effective_chat.id}</code>",
+        parse_mode="HTML"
+    )
+
+ll
+
+async def cmd_reklam(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Admin Özel: Tüm kullanıcılara duyuru gönderir"""
+    if update.effective_user.id not in ADMIN_IDS: return
+    msg = " ".join(ctx.args)
+    if not msg:
+        return await update.message.reply_text("❌ Reklam mesajı yazmalısın!")
+    
+    db = await get_db()
+    users = await db.users.find({}, {"telegram_id": 1}).to_list(length=None)
+    
+    basarili = 0
+    for u in users:
+        try:
+            await ctx.bot.send_message(chat_id=u['telegram_id'], text=msg, parse_mode="HTML")
+            basarili += 1
+        except: continue
+    await update.message.reply_text(f"✅ Reklam {basarili} kişiye ulaştı.")
+
+async def cmd_cleanup(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Admin Özel: Takılı oyunları manuel temizler"""
+    if update.effective_user.id not in ADMIN_IDS: return
+    await cleanup_stuck_games()
+    await update.message.reply_text("🧹 Veritabanı ve takılı oyunlar temizlendi.")
+
 async def cmd_changename(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Kullanıcı ismini özelleştirir"""
     user = update.effective_user
