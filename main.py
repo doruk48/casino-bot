@@ -470,6 +470,30 @@ async def cmd_moneys(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"💳 Yeni bakiye: {format_amount(new_bal)}",
             parse_mode="HTML"
         )
+
+async def cmd_leaderboard(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Liderlik tablosu"""
+    if is_rate_limited(update.effective_user.id): return
+    
+    rows = await get_leaderboard(LEADERBOARD_SIZE)
+    
+    # Grup adını buradan al (örnek: ctx.bot.username veya sabit)
+    group_name = "Casino Bot"  # Burayı grubun adıyla değiştir
+    
+    # Token birimi
+    token_symbol = "🪙"  # Burayı istediğin sembolle değiştir
+    
+    medals = ["🥇", "🥈", "🥉"]
+    lines = [f"🏆 {group_name} En Zengin 10 Kullanıcı 🏆", "━━━━━━━━━━━━━━━━━━━━━"]
+    
+    for i, r in enumerate(rows):
+        medal = medals[i] if i < 3 else f"{i+1}️⃣"
+        name = r.get("display_name", "Bilinmeyen")[:15]
+        balance = r['balance']
+        lvl, emoji = get_level(balance)
+        lines.append(f"{medal} {name} ❇️  {format_amount(balance)} {token_symbol} {emoji}{lvl}")
+    
+    await update.message.reply_text("\n".join(lines), parse_mode="HTML")
 async def cmd_changename(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Kullanıcı ismini özelleştirir"""
     user = update.effective_user
