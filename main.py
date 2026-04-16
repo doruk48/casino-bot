@@ -1411,6 +1411,62 @@ async def cmd_addbalance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
+
+
+async def cmd_setbalance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Admin Özel: Bakiyeyi direkt olarak verilen miktara eşitleyen komut"""
+    user = update.effective_user
+    
+    # Senin sisteminde tanımlı olan ADMIN_IDS kontrolünü buraya alıyoruz
+    if user.id not in ADMIN_IDS:
+        return
+
+    args = ctx.args
+    reply = update.message.reply_to_message
+    
+    target_id = None
+    amount_str = ""
+
+    # Yanıtla veya ID ile hedef belirleme
+    if reply:
+        target_id = reply.from_user.id
+        amount_str = args[0] if args else ""
+    elif len(args) >= 2:
+        try:
+            target_id = int(args[0])
+            amount_str = args[1]
+        except:
+            return await update.message.reply_text("❌ Kullanım: /setbalance <id> <miktar>")
+    else:
+        return await update.message.reply_text("❌ Kullanım: /setbalance <miktar> (reply) veya /setbalance <id> <miktar>")
+
+    # Admin'in yazdığı miktarı işle
+    # parse_amount fonksiyonun 1M, 1k gibi kısaltmaları da çözecektir
+    target_bal, err = parse_amount(amount_str, 999_999_999_999_999) # Admin için limit kontrolü devredışı
+    
+    if err:
+        return await update.message.reply_text(f"❌ Hata: {err}")
+
+    db = await get_db()
+    
+    # Bakiyeyi direkt EŞİTLE ($set kullanımı)
+    result = await db.users.update_one(
+        {"telegram_id": target_id},
+        {"$set": {"balance": target_bal}}
+    )
+    
+    if result.matched_count > 0:
+        await update.message.reply_text(
+            f"🛠 <b>ADMİN GÜNCELLEME</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 <b>Hedef ID:</b> <code>{target_id}</code>\n"
+            f"💰 <b>Yeni Bakiye:</b> {format_amount(target_bal)}\n"
+            f"✅ Bakiye başarıyla eşitlendi.",
+            parse_mode="HTML"
+        )
+        logger.warning(f"⚠️ ADMIN {user.id}, {target_id} bakiyesini {target_bal} yaptı.")
+    else:
+        await update.message.reply_text("❌ Kullanıcı veritabanında bulunamadı.")
 async def cmd_cleanup(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """Admin: Takılı kalan oyunları ve bellek kilitlerini temizle"""
     if update.effective_user.id not in ADMIN_IDS: return
