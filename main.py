@@ -959,7 +959,7 @@ async def cmd_leaderboard(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     
     
 # ═══════════════════════════════════════════════════════════════
-#  GÜNLÜK BONUS
+# GÜNLÜK BONUS
 # ═══════════════════════════════════════════════════════════════
 
 def get_daily_bonus(streak: int) -> int:
@@ -1058,14 +1058,14 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ {err}")
         return
 
-    msg_placeholder = await update.message.reply_text("🎰 Oyun başlatılıyor...")
-    game = await create_game(chat_id, "roulette", msg_placeholder.message_id)
+    # 🎯 oyun oluştur
+    game = await create_game(chat_id, "roulette", None)
 
     caption = (
         f"🎰 <b>AVRUPA RULETİ BAŞLADI!</b>\n"
         f"🆔 GAME ID: <code>{game['game_id']}</code>\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n"
-        f"⏱ <b>{BET_WINDOW} saniye</b> içinde bahis yapın!\n\n"
+        f"⏱ <b>{BET_WINDOW} saniye</b> bahis süresi!\n\n"
         f"🔴 /red <miktar>\n"
         f"⚫ /black <miktar>\n"
         f"🟢 /green <miktar>\n"
@@ -1073,12 +1073,23 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"🔢 /numbers <1,2,3> <miktar>"
     )
 
+    spin_img = os.path.join(ROULETTE_IMG_PATH, "spin.jpg")
+
+    # 🎯 spin mesajı (orijinal davranış)
     try:
-        await ctx.bot.delete_message(chat_id, msg_placeholder.message_id)
-        msg = await update.message.reply_text(caption, parse_mode="HTML")
-    except:
+        if os.path.exists(spin_img):
+            with open(spin_img, "rb") as photo:
+                msg = await update.message.reply_photo(
+                    photo=photo,
+                    caption=caption,
+                    parse_mode="HTML"
+                )
+        else:
+            msg = await update.message.reply_text(caption, parse_mode="HTML")
+    except Exception:
         msg = await update.message.reply_text(caption, parse_mode="HTML")
 
+    # 🎯 timer başlat
     asyncio.create_task(_roulette_timer(ctx, chat_id, game["game_id"], msg))
 
 
@@ -1095,6 +1106,7 @@ async def _roulette_timer(ctx, chat_id, game_id, msg):
     color = ROUL_COLORS[winning]
     color_emoji = ROUL_EMOJI[color]
 
+    # 🎯 spin mesajını sil (orijinal akış)
     try:
         await ctx.bot.delete_message(chat_id, msg.message_id)
     except:
@@ -1111,139 +1123,57 @@ async def _roulette_timer(ctx, chat_id, game_id, msg):
             payout = 0
             won = False
 
-            # COLOR
-            if bd["type"] == "color":
-                if bd["color"] == color:
+            # 🔴 COLOR
+            if bd.get("type") == "color":
+                if bd.get("color") == color:
                     multiplier = ROULETTE_MULTIPLIERS.get(color, 2)
                     payout = bet * multiplier
-                    await add_balance(uid, payout, "win", f"Rulet game:{game_id}")
-                    winner_list.append((bd["name"], color, payout))
+                    await add_balance(uid, payout, "win", f"roulette:{game_id}")
+                    winner_list.append((bd.get("name"), color, payout))
                     won = True
 
-            # NUMBER
-            elif bd["type"] == "number":
-                if winning in bd["numbers"]:
-                    per_number_bet = bet // len(bd["numbers"])
-                    multiplier = 35
-                    payout = per_number_bet * multiplier
-                    await add_balance(uid, payout, "win", f"Rulet game:{game_id}")
-                    winner_list.append((bd["name"], None, payout))
+            # 🔢 NUMBER
+            elif bd.get("type") == "number":
+                if winning in bd.get("numbers", []):
+                    per = bet // len(bd["numbers"])
+                    payout = per * 35
+                    await add_balance(uid, payout, "win", f"roulette:{game_id}")
+                    winner_list.append((bd.get("name"), None, payout))
                     won = True
 
             await update_win_rate(uid, "roulette", won)
 
-    result_text = f"🎰 <b>RULET SONUÇLANDI!</b>\n"
-    result_text += f"🆔 GAME ID: <code>{game_id}</code>\n\n"
-    result_text += f"🏆 Kazanan Sayı: {format_number_with_emoji(winning)} {color_emoji}\n\n"
+    # 🎯 sonuç mesajı
+    result_text = (
+        f"🎰 <b>RULET SONUÇLANDI!</b>\n"
+        f"🆔 GAME ID: <code>{game_id}</code>\n\n"
+        f"🏆 Kazanan Sayı: {format_number_with_emoji(winning)} {color_emoji}\n\n"
+    )
 
     if winner_list:
         result_text += "🏧 <b>Kazananlar:</b>\n"
         winner_list.sort(key=lambda x: x[2], reverse=True)
 
-        for i, (name, win_color, payout) in enumerate(winner_list[:15], 1):
-            emoji = ROUL_EMOJI.get(win_color, color_emoji)
+        for i, (name, c, payout) in enumerate(winner_list[:15], 1):
+            emoji = ROUL_EMOJI.get(c, color_emoji)
             result_text += f"{get_rank_emoji(i)} {name} {emoji} {format_amount(payout)}🪙\n"
     else:
         result_text += "💀 <b>Kazanan olmadı!</b>\n"
 
-    await ctx.bot.send_message(chat_id, result_text, parse_mode="HTML")
+    # 🎯 sonuç görseli
+    try:
+        img_path = get_roulette_image(winning)
+        if os.path.exists(img_path):
+            with open(img_path, "rb") as photo:
+                await ctx.bot.send_photo(chat_id, photo=photo, caption=result_text, parse_mode="HTML")
+        else:
+            await ctx.bot.send_message(chat_id, result_text, parse_mode="HTML")
+    except:
+        await ctx.bot.send_message(chat_id, result_text, parse_mode="HTML")
 
     await finish_game(chat_id, game_id, str(winning))
-    await cleanup(chat_id)
+    await cleanup(chat_id) 
 
-
-async def _rulet_bet(update: Update, bet_type: str, color=None, numbers=None, amount_str="0"):
-    user = update.effective_user
-    chat_id = update.effective_chat.id
-
-    if is_rate_limited(user.id):
-        return
-
-    await get_or_create_user(user.id, user.username, user.full_name)
-
-    bal = await get_balance(user.id)
-    amount, err = parse_amount(amount_str, bal)
-
-    if err:
-        await update.message.reply_text(f"❌ {err}")
-        return
-
-    game = await get_active_game(chat_id, "roulette")
-    if not game or game["state"] != "OPEN":
-        await update.message.reply_text("❌ Açık rulet yok veya süre doldu.")
-        return
-
-    ok = await remove_balance(user.id, amount, "bet", f"Rulet game:{game['game_id']}")
-    if not ok:
-        await update.message.reply_text("❌ Yetersiz bakiye.")
-        return
-
-    if bet_type == "color":
-        bd = {
-            "type": "color",
-            "color": color,
-            "name": user.full_name
-        }
-        emoji = {"red": "🔴", "black": "⚫", "green": "🟢"}[color]
-
-    else:
-        bd = {
-            "type": "number",
-            "numbers": numbers,
-            "name": user.full_name
-        }
-        emoji = "🔵"
-
-    await add_participant(chat_id, game["game_id"], user.id, amount, bd)
-
-    await update.message.reply_text(
-        f"🕹 <b>{user.full_name}</b> {emoji} {format_amount(amount)}🪙 bahis yaptı",
-        parse_mode="HTML"
-    )
-
-
-async def cmd_red(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    await _rulet_bet(update, "color", color="red", amount_str=ctx.args[0] if ctx.args else "0")
-
-
-async def cmd_black(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    await _rulet_bet(update, "color", color="black", amount_str=ctx.args[0] if ctx.args else "0")
-
-
-async def cmd_green(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    await _rulet_bet(update, "color", color="green", amount_str=ctx.args[0] if ctx.args else "0")
-
-
-async def cmd_number(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    if len(ctx.args) < 2:
-        await update.message.reply_text("❌ Kullanım: /number <sayı> <miktar>")
-        return
-
-    try:
-        n = int(ctx.args[0])
-        if 0 <= n <= 36:
-            await _rulet_bet(update, "number", numbers=[n], amount_str=ctx.args[1])
-        else:
-            await update.message.reply_text("❌ Geçersiz sayı (0-36).")
-    except:
-        await update.message.reply_text("❌ Geçersiz sayı.")
-
-
-async def cmd_numbers(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    if len(ctx.args) < 2:
-        await update.message.reply_text("❌ Kullanım: /numbers <1,2,3> <miktar>")
-        return
-
-    try:
-        nums = [int(x.strip()) for x in ctx.args[0].split(",")]
-        if not all(0 <= n <= 36 for n in nums):
-            await update.message.reply_text("❌ Geçersiz sayı listesi.")
-            return
-    except:
-        await update.message.reply_text("❌ Geçersiz sayı listesi.")
-        return
-
-    await _rulet_bet(update, "number", numbers=nums, amount_str=ctx.args[1])
 
     
     
