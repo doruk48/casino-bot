@@ -1094,13 +1094,13 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return
 
     caption = (
-        f"🎰 <b>RULET BAŞLADI</b>\n"
-        f"⏱ {BET_WINDOW} saniye\n\n"
-        f"🔴 /red <miktar>\n"
-        f"⚫ /black <miktar>\n"
-        f"🟢 /green <miktar>\n"
-        f"🔢 /number <sayı> <miktar>\n"
-        f"🔢 /numbers <1,2,3> <miktar>"
+    f"🎰 <b>RULET BAŞLADI</b>\n"
+    f"⏱ {BET_WINDOW} saniye\n\n"
+    f"🔴 /red &lt;miktar&gt;\n"
+    f"⚫ /black &lt;miktar&gt;\n"
+    f"🟢 /green &lt;miktar&gt;\n"
+    f"🔢 /number &lt;sayı&gt; &lt;miktar&gt;\n"
+    f"🔢 /numbers &lt;1,2,3&gt; &lt;miktar&gt;"
     )
 
     msg = await update.message.reply_text(caption, parse_mode="HTML")
