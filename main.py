@@ -1077,6 +1077,17 @@ def get_rank_emoji(rank: int) -> str:
     else:
         return "📍"
 
+
+def get_roulette_image(number: int) -> str:
+    # Görseller ana klasörde (BASE_DIR)
+    img_path = os.path.join(BASE_DIR, f"{number}.jpg")
+    
+    if not os.path.exists(img_path):
+        spin_path = os.path.join(BASE_DIR, "spin.jpg")
+        if os.path.exists(spin_path):
+            img_path = spin_path
+    return img_path
+
 # ============================================================
 # GAME START
 # ============================================================
