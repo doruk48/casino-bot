@@ -60,8 +60,8 @@ def get_font(size: int):
 #  AYARLAR
 # ═══════════════════════════════════════════════════════════════
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8646115906:AAGs9_0smBGKtL-Rlp7kDl13qYQILPcg14Q")
-MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://1botuser2:Barkın1234@cluster0.8zvjyjk.mongodb.net/")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+MONGO_URI = os.getenv("MONGO_URI")
 
 STARTING_BALANCE = 1000000
 CURRENCY_SYMBOL = "🪙BTK"
@@ -3338,11 +3338,11 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "1️⃣ /rulet ile oyun başlatın\n"
             "2️⃣ 25 saniye içinde bahis yapın:\n"
-            "   🔴 /red <miktar> - Kırmızıya bahis\n"
-            "   ⚫ /black <miktar> - Siyaha bahis\n"
-            "   🟢 /green <miktar> - Yeşile bahis (0)\n"
-            "   🔢 /number <sayı> <miktar> - Tek sayı\n"
-            "   🔢 /numbers <1,2,3> <miktar> - Çoklu sayı\n\n"
+            "   🔴 /red &lt;miktar&gt; - Kırmızıya bahis\n"
+            "   ⚫ /black &lt;miktar&gt; - Siyaha bahis\n"
+            "   🟢 /green &lt;miktar&gt; - Yeşile bahis (0)\n"
+            "   🔢 /number &lt;sayı&gt; &lt;miktar&gt; - Tek sayı\n"
+            "   🔢 /numbers &lt;1,2,3&gt; &lt;miktar&gt; - Çoklu sayı\n\n"
             "💰 Çarpanlar: Kırmızı/Siyah 2x, Yeşil 72x, Sayı 36x\n"
             "🎯 Bol şans!",
             reply_markup=InlineKeyboardMarkup(ana_menu_button),
@@ -3354,7 +3354,7 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "🃏 <b>BLACKJACK NASIL OYNANIR?</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "1️⃣ /blackjack ile oyun başlatın\n"
-            "2️⃣ 25 saniye içinde /bj <miktar> ile bahis yapın\n"
+            "2️⃣ 25 saniye içinde /bj &lt;miktar&gt; ile bahis yapın\n"
             "3️⃣ Kartlar dağıtılır, sırayla oynarsınız:\n"
             "   🃏 Hit - Yeni kart al\n"
             "   ✋ Stand - Kart dur\n\n"
@@ -3373,7 +3373,7 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "🎲 <b>ZAR OYUNU (PvP) NASIL OYNANIR?</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "1️⃣ /dicebet ile oyun başlatın\n"
-            "2️⃣ 25 saniye içinde /dice <miktar> ile katılın\n"
+            "2️⃣ 25 saniye içinde /dice &lt;miktar&gt; ile katılın\n"
             "3️⃣ En az 2 oyuncu gerekir\n"
             "4️⃣ Sırayla butona tıklayarak zar atın\n"
             "5️⃣ En yüksek zar toplamı kazanır\n"
@@ -3389,7 +3389,7 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "🎡 <b>ÇARKIFELEK NASIL OYNANIR?</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "1️⃣ /wheelbet ile oyun başlatın\n"
-            "2️⃣ 25 saniye içinde /wheel <miktar> ile bahis yapın\n"
+            "2️⃣ 25 saniye içinde /wheel &lt;miktar&gt; ile bahis yapın\n"
             "3️⃣ Çark döner ve sonuç belirlenir\n\n"
             "💰 Kazançlar:\n"
             "• 💀 PASS → Bahis kaybedilir\n"
@@ -3405,10 +3405,10 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "🎟 <b>KAZI KAZAN NASIL OYNANIR?</b>\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
             "🎟️ <b>TEK KİŞİLİK</b>\n"
-            "📌 /kazisolo <miktar> - Tek başına oyna\n\n"
+            "📌 /kazisolo &lt;miktar&gt; - Tek başına oyna\n\n"
             "🎟️ <b>TURNUVASI</b>\n"
             "1️⃣ /kazibet - Turnuva başlat\n"
-            "2️⃣ /kazi <miktar> - Turnuvaya katıl (en az 2 kişi)\n\n"
+            "2️⃣ /kazi &lt;miktar&gt; - Turnuvaya katıl (en az 2 kişi)\n\n"
             "🏆 Kazanma şartı:\n"
             "6 kutuda 3 aynı çarpan = KAZANÇ!\n\n"
             "💰 Çarpanlar: 2x, 3x, 5x, 10x, 15x, 25x, 50x, 100x, 250x\n"
@@ -3420,7 +3420,6 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     elif data == "menu_balance":
         u = await get_user(user.id)
         if u:
-            # Sıralama
             db = await get_db()
             higher_count = await db.users.count_documents({"balance": {"$gt": u["balance"]}})
             rank = higher_count + 1
@@ -3459,12 +3458,60 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         )
         
     elif data == "menu_daily":
-        await query.edit_message_text("🎁 Günlük bonus alınıyor...")
-        # fake update ile cmd_daily çağrılır
-        fake_update = update
-        fake_update.message = query.message
-        await cmd_daily(fake_update, ctx)
-        await query.delete_message()
+        # Direkt daily bonusu ver, fake update'e gerek yok
+        u = await get_or_create_user(user.id, user.username, user.full_name)
+        db = await get_db()
+        lock = await _get_lock(user.id)
+        
+        async with lock:
+            user_data = await db.users.find_one({"telegram_id": user.id})
+            last_daily = user_data.get("last_daily")
+            current_streak = user_data.get("daily_streak", 0)
+            
+            can_claim, hours_left = can_claim_daily(last_daily)
+            
+            if not can_claim:
+                await query.edit_message_text(
+                    f"⏰ <b>Günlük bonusunuzu zaten aldınız!</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🎁 Sonraki bonus: <b>{hours_left} saat</b> sonra\n"
+                    f"📈 Mevcut seri: <b>{current_streak} gün</b>",
+                    reply_markup=InlineKeyboardMarkup(ana_menu_button),
+                    parse_mode="HTML"
+                )
+                return
+            
+            new_streak = current_streak + 1
+            bonus_amount = get_daily_bonus(current_streak)
+            
+            await db.users.update_one(
+                {"telegram_id": user.id},
+                {"$inc": {"balance": bonus_amount},
+                 "$set": {"last_daily": datetime.now().isoformat(), "daily_streak": new_streak, "updated_at": datetime.now()}}
+            )
+            
+            await db.transactions.insert_one({
+                "to_id": user.id,
+                "amount": bonus_amount,
+                "type": "daily",
+                "description": f"{new_streak}. gün bonusu",
+                "created_at": datetime.now()
+            })
+            
+            new_balance = await get_balance(user.id)
+            next_bonus = get_daily_bonus(new_streak)
+            
+            await query.edit_message_text(
+                f"🎁 <b>GÜNLÜK BONUS!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 <b>{user.full_name}</b>\n"
+                f"📅 Seri: <b>{new_streak}</b> gün\n"
+                f"💰 Kazanılan: <b>+{format_amount(bonus_amount)}</b>\n"
+                f"💳 Yeni bakiye: <b>{format_amount(new_balance)}</b>\n\n"
+                f"🎯 Yarınki bonus: <b>{format_amount(next_bonus)}</b>",
+                reply_markup=InlineKeyboardMarkup(ana_menu_button),
+                parse_mode="HTML"
+            )
         
     elif data == "menu_buy":
         await query.edit_message_text(
@@ -3547,11 +3594,10 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"Bir oyun seçin veya bilgi almak için butonlara tıklayın:",
             reply_markup=InlineKeyboardMarkup(main_keyboard),
             parse_mode="HTML"
-        )
-        
-        
-        
-        
+    )
+
+
+
 # ═══════════════════════════════════════════════════════════════
 #  YARDIMCI FONKSİYONLAR
 # ═══════════════════════════════════════════════════════════════
