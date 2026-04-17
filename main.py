@@ -3667,8 +3667,7 @@ async def post_init(app):
     asyncio.create_task(backup_task())
     logger.info("🎰 CasiniBot başlatıldı!")
     logger.info(f"📁 BASE_DIR: {BASE_DIR}")
-    logger.info(f"💾 MongoDB: {'Bağlı' if _db else 'Bağlantı yok'}")
-
+    logger.info(f"💾 MongoDB: {'Bağlı' if _db is not None else 'Bağlantı yok'}")
 
 async def post_shutdown(app):
     """Bot kapatıldığında çalışır"""
