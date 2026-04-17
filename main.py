@@ -60,7 +60,7 @@ def get_font(size: int):
 #  AYARLAR
 # ═══════════════════════════════════════════════════════════════
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8646115906:AAEn4Rydo0TjRBm_iiaZqSRJ-KcIqUmNyZQ")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8646115906:AAGs9_0smBGKtL-Rlp7kDl13qYQILPcg14Q")
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://1botuser2:Barkın1234@cluster0.8zvjyjk.mongodb.net/")
 
 STARTING_BALANCE = 1000000
