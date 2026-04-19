@@ -729,18 +729,22 @@ def create_jackpot_image(game_type: str, winner_name: str) -> io.BytesIO:
         # Font - Transfer ile aynı
         font_isim = get_font(int(height * 0.10))
         
-        # Renkler - Altın ve gölge
-        gold_color = "#FFD700"
-        shadow_color = "#8B6914"
+        # Renkler - Parlak Beyaz ve koyu gölge
+        gold_color = "#FFFFFF"      # Beyaz
+        shadow_color = "#1a1a1a"    # Koyu gri/siyah gölge
         
         # Koordinatlar - "OYUNCU:" yazısının sağı
-        name_x = int(width * 0.60)
-        name_y = int(height * 0.25)
+        name_x = int(width * 0.63)
+        name_y = int(height * 0.23)
         
         # Temizlenmiş isim
         clean_name = re.sub(r'[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]', '', winner_name)
         if not clean_name:
             clean_name = winner_name
+        
+        # İsmi kısalt (10 karakter sınır)
+        if len(clean_name) > 10:
+            clean_name = clean_name[:10] + "..."
         
         # Gölgeli isim
         draw.text((name_x + 3, name_y + 3), clean_name, fill=shadow_color, font=font_isim, anchor="lm")
