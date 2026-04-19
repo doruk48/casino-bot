@@ -1022,20 +1022,20 @@ async def cmd_jackpot(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         blackjack_amount = await _get_jackpot_amount("blackjack")
         
         text = (
-            f"🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n"
-            f"      👑 <b>KRALLIK JACKPOT HAVUZLARI</b> 👑\n"
-            f"🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n\n"
+            f"          🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n"
+            f"    👑 <b>KRALLIK JACKPOT HAVUZLARI</b> 👑\n"
+            f"          🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n\n"
             f"✅ <b>🎡 ÇARKIFELEK KRALLIĞI</b> ✅\n"
-            f"═══════════════════════════════════\n"
-            f"🔘 <b>HAVUZ:</b> <code>{format_amount(wheel_amount)}</code> 🪙BTK 💵💵\n"
+            f"    ═══════════════════════\n"
+            f"🔘 <b>HAVUZ:</b> <code>{format_amount(wheel_amount)}</code>  💵💵\n"
             f"🔘 <b>JACKPOT ŞANSI:</b> %5\n"
             f"🔘 PASS → HAVUZA EKLENİR\n\n"
             f"✅ <b>🃏 BLACKJACK KRALLIĞI</b> ✅\n"
-            f"═══════════════════════════════════\n"
-            f"🔘 <b>HAVUZ:</b> <code>{format_amount(blackjack_amount)}</code> 🪙BTK 💵💵\n"
+            f"    ══════════════════════\n"
+            f"🔘 <b>HAVUZ:</b> <code>{format_amount(blackjack_amount)}</code>  💵💵\n"
             f"🔘 21 YAPANA → JACKPOT\n"
             f"🔘 BUST → HAVUZA EKLENİR\n\n"
-            f"      👑💰 <b>TAHT SENİ BEKLİYOR!</b> 💰👑"
+            f"      👑 <b>TAHT SENİ BEKLİYOR!</b> 👑"
         )
         
         await update.message.reply_text(text, parse_mode="HTML")
