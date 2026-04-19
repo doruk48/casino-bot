@@ -95,23 +95,24 @@ ACIK_KART_PATH = os.path.join(BASE_DIR, "acik.jpg")
 # Transfer
 TRANSFER_TEMPLATE_PATH = os.path.join(BASE_DIR, "transfer.png")
 
-# Çarkıfelek
+# Çarkıfelek - KASA LEHİNE DAĞILIM
 WHEEL_SEGMENTS = [
+    # 💀 PASS - 6 adet
     ("💀 PASS 💀", 0), ("💀 PASS 💀", 0), ("💀 PASS 💀", 0),
     ("💀 PASS 💀", 0), ("💀 PASS 💀", 0), ("💀 PASS 💀", 0),
-    ("💀 PASS 💀", 0), ("💀 PASS 💀", 0), ("💀 PASS 💀", 0),
-    ("💀 PASS 💀", 0), ("💀 PASS 💀", 0), ("💀 PASS 💀", 0),
+    
+    # 🎰 JACKPOT - 1 adet
+    ("🎰 JACKPOT 🎰", -1),
+    
+    # 🔄 İADE - 5 adet
     ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1),
-    ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1),
-    ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1),
-    ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1),
+    ("🔄 İADE 🔄", 1), ("🔄 İADE 🔄", 1),
+    
+    # Çarpanlar (toplam 8 adet)
     ("🟢 2x", 2), ("🟢 2x", 2), ("🟢 2x", 2),
     ("🟢 3x", 3), ("🟢 3x", 3),
-    ("🔵 5x", 5), ("🔵 5x", 5),
+    ("🔵 5x", 5),
     ("🔵 10x", 10),
-    ("🔵 15x", 15),
-    ("🟣 25x", 25),
-    ("🟣 50x", 50),
     ("🟡 100x", 100),
 ]
 random.shuffle(WHEEL_SEGMENTS)
