@@ -1018,14 +1018,22 @@ async def cmd_jackpot(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         blackjack_amount = await _get_jackpot_amount("blackjack")
         
         text = (
-            f"🎰 <b>JACKPOT HAVUZLARI</b>\n"
-            f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"🎡 Çarkıfelek: {format_amount(wheel_amount)}\n"
-            f"🃏 Blackjack: {format_amount(blackjack_amount)}\n\n"
-            f"━━━━━━━━━━━━━━━━━━━━━\n"
-            f"💡 Minimum jackpot: {format_amount(JACKPOT_MINIMUM)}\n"
-            f"💡 PASS/BUST → Havuza eklenir\n"
-            f"💡 JACKPOT/21 → Havuz dağıtılır"
+            f"🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n"
+            f"   👑 <b>KRALLIK JACKPOT HAVUZLARI</b> 👑\n"
+            f"🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n\n"
+            f"🔥👑 <b>ÇARKIFELEK KRALLIĞI</b> 👑🔥\n"
+            f"═══════════════════════════════════\n"
+            f"💰🔥 HAVUZ: <code>{format_amount(wheel_amount)}</code> 🪙BTK 💸💸\n"
+            f"🎲 JACKPOT ŞANSI: <b>%5</b>\n"
+            f"♻️ PASS → HAVUZA EKLENİR\n\n"
+            f"🔥👑 <b>BLACKJACK KRALLIĞI</b> 👑🔥\n"
+            f"═══════════════════════════════════\n"
+            f"💰🔥 HAVUZ: <code>{format_amount(blackjack_amount)}</code> 🪙BTK 💸💸\n"
+            f"🃏 21 YAPANA <b>JACKPOT</b>\n"
+            f"♻️ BUST → HAVUZA EKLENİR\n\n"
+            f"🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n"
+            f"   👑💰 <b>TAHT SENİ BEKLİYOR!</b> 💰👑\n"
+            f"🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥"
         )
         
         await update.message.reply_text(text, parse_mode="HTML")
