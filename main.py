@@ -734,8 +734,8 @@ def create_jackpot_image(game_type: str, winner_name: str) -> io.BytesIO:
         shadow_color = "#8B6914"
         
         # Koordinatlar - "OYUNCU:" yazısının sağı
-        name_x = int(width * 0.55)
-        name_y = int(height * 0.22)
+        name_x = int(width * 0.60)
+        name_y = int(height * 0.25)
         
         # Temizlenmiş isim
         clean_name = re.sub(r'[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]', '', winner_name)
@@ -1690,7 +1690,28 @@ async def cmd_stats(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"━━━━━━━━━━━━━━━━━━━━━\n"
         f"🕒 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         parse_mode="HTML"
-        )        
+        )
+
+
+
+async def cmd_testjackpot(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Jackpot görselini test et (Sadece Admin)"""
+    user = update.effective_user
+    
+    if user.id not in ADMIN_IDS:
+        await update.message.reply_text("⛔ Bu komutu kullanma yetkiniz yok!")
+        return
+    
+    test_name = user.full_name if user.full_name else "Test Oyuncu"
+    
+    for game_type in ["wheel", "blackjack"]:
+        img = create_jackpot_image(game_type, test_name)
+        
+        if img:
+            caption = f"🧪 <b>TEST GÖRSELİ</b>\n🎮 Oyun: {game_type}\n👤 İsim: {test_name}\n\n✅ Görsel başarıyla oluşturuldu."
+            await update.message.reply_photo(photo=img, caption=caption, parse_mode="HTML")
+        else:
+            await update.message.reply_text(f"❌ {game_type} görseli oluşturulamadı.")
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -4346,6 +4367,7 @@ def main():
     app.add_handler(CommandHandler("setbalance", cmd_setbalance))
     app.add_handler(CommandHandler("cleanup", cmd_cleanup))
     app.add_handler(CommandHandler("stats", cmd_stats))
+    app.add_handler(CommandHandler("testjackpot", cmd_testjackpot))
     
     # ═══════════════════════════════════════════════════════════
     #  MENÜ CALLBACK
