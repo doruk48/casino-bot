@@ -228,7 +228,6 @@ def get_level(balance: int) -> tuple[str, str]:
             result = (name, emoji)
     return result
 
-def format_amount(amount: int) -> str:
 def format_amount(amount) -> str:
     """Büyük sayıları formatla - Decimal128, Decimal veya int kabul eder"""
     if amount is None:
