@@ -734,8 +734,8 @@ def create_jackpot_image(game_type: str, winner_name: str) -> io.BytesIO:
         shadow_color = "#1a1a1a"    # Koyu gri/siyah gölge
         
         # Koordinatlar - "OYUNCU:" yazısının sağı
-        name_x = int(width * 0.63)
-        name_y = int(height * 0.23)
+        name_x = int(width * 0.59)
+        name_y = int(height * 0.26)
         
         # Temizlenmiş isim
         clean_name = re.sub(r'[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]', '', winner_name)
