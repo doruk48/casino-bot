@@ -526,7 +526,24 @@ async def get_leaderboard(limit=15) -> list[dict]:
     db = await get_db()
     cursor = db.users.find().sort("balance", -1).limit(limit)
     users = await cursor.to_list(length=limit)
-    return users
+    
+    # Tüm bakiyeleri int'e çevir
+    for user in users:
+        balance = user.get("balance", 0)
+        if isinstance(balance, Decimal128):
+            user["balance"] = int(balance.to_decimal())
+        elif isinstance(balance, Decimal):
+            user["balance"] = int(balance)
+        else:
+            try:
+                user["balance"] = int(balance) if balance else 0
+            except:
+                user["balance"] = 0
+    
+    # Manuel sıralama
+    users.sort(key=lambda x: x.get("balance", 0), reverse=True)
+    
+    return users[:limit]
     
     
     
@@ -1177,13 +1194,35 @@ async def cmd_balance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     
     # Kullanıcının sıralamasını bul
     db = await get_db()
-    higher_count = await db.users.count_documents({"balance": {"$gt": u["balance"]}})
+    
+    # Mevcut bakiyeyi int'e çevir
+    current_balance = u.get("balance", 0)
+    if isinstance(current_balance, Decimal128):
+        current_balance = int(current_balance.to_decimal())
+    elif isinstance(current_balance, Decimal):
+        current_balance = int(current_balance)
+    else:
+        try:
+            current_balance = int(current_balance) if current_balance else 0
+        except:
+            current_balance = 0
+    
+    # Sıralama için sorgula
+    try:
+        higher_count = await db.users.count_documents({
+            "$or": [
+                {"balance": {"$gt": Decimal128(str(current_balance))}},
+                {"balance": {"$gt": current_balance}}
+            ]
+        })
+    except:
+        higher_count = await db.users.count_documents({})
     rank = higher_count + 1
     
     # Seviye
-    lvl, emoji = get_level(u["balance"])
+    lvl, emoji = get_level(current_balance)
     
-    # Bakiye formatı (sembol zaten format_amount içinde var)
+    # Bakiye formatı
     balance = format_amount(u['balance'])
     
     # Oyun istatistiklerini al
@@ -1218,7 +1257,6 @@ async def cmd_balance(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     )
     
     await update.message.reply_text(message, parse_mode="HTML")
-
 
 async def cmd_changename(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """İsim değiştir"""
@@ -2373,11 +2411,77 @@ async def _bj_dealer(ctx, chat_id, game_id):
     ]
     total_payout = 0
     
+    # 🎰 JACKPOT RESULT STRING'İ
+    jackpot_result = f"dealer:{dval}"
+    
     for uid in bj["order"]:
         p = bj["players"][uid]
         pval = _hand_val(p["hand"])
         bet = p["bet"]
         
+        # ═══════════════════════════════════════════════════════
+        # 🎰 JACKPOT İŞLEMLERİ (ÖNCE HAVUZA EKLEME)
+        # ═══════════════════════════════════════════════════════
+        if p["state"] == "BUST":
+            # BUST: Bahsin %100'ü havuza
+            await _add_to_jackpot("blackjack", bet)
+            jackpot_result += "|BUST"
+            
+        elif pval < dval and dval <= 21:
+            # Kaybetme: Bahsin %25'i havuza
+            commission = int(bet * 0.25)
+            if commission > 0:
+                await _add_to_jackpot("blackjack", commission)
+            jackpot_result += "|LOSE"
+            
+        elif pval == dval:
+            # Beraberlik: Bahsin %10'u havuza
+            commission = int(bet * 0.10)
+            if commission > 0:
+                await _add_to_jackpot("blackjack", commission)
+            jackpot_result += "|PUSH"
+            
+        elif pval == 21:
+            # 21 yapan - JACKPOT DAĞIT
+            jackpot_amount = await _get_jackpot_amount("blackjack")
+            if jackpot_amount > JACKPOT_MINIMUM:
+                total_win = bet + jackpot_amount
+                await add_balance(uid, total_win, "win", f"Blackjack JACKPOT! game:{game_id}")
+                await update_stats(uid, total_win)
+                await update_win_rate(uid, "blackjack", True)
+                
+                # Görsel gönder
+                user = await get_user(uid)
+                player_name = user.get("display_name", str(uid)) if user else str(uid)
+                jackpot_img = create_jackpot_image("blackjack", player_name)
+                caption = (
+                    f"🃏 <b>BLACKJACK JACKPOT KAZANDIN!</b> 🃏\n"
+                    f"━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🆔 GAME ID: {game_id}\n"
+                    f"🃏 Oyun: Blackjack (21)\n"
+                    f"💰 Havuz Payın: {format_amount(jackpot_amount)}\n"
+                    f"🎁 Bahis İaden: {format_amount(bet)}\n"
+                    f"💳 Toplam: {format_amount(total_win)}\n\n"
+                    f"🎉 <b>TEBRİKLER!</b> 🎉"
+                )
+                
+                try:
+                    if jackpot_img:
+                        await ctx.bot.send_photo(chat_id, photo=jackpot_img, caption=caption, parse_mode="HTML")
+                    else:
+                        await ctx.bot.send_message(chat_id, caption, parse_mode="HTML")
+                except Exception as e:
+                    logger.error(f"Jackpot görseli gönderilemedi: {e}")
+                    await ctx.bot.send_message(chat_id, caption, parse_mode="HTML")
+                
+                await _reset_jackpot("blackjack")
+                logger.info(f"🃏 Blackjack JACKPOT dağıtıldı: {format_amount(jackpot_amount)}. Kazanan: {player_name}")
+            
+            jackpot_result += "|BLACKJACK"
+        
+        # ═══════════════════════════════════════════════════════
+        # NORMAL KAZANÇ/KAYIP İŞLEMLERİ (MEVCUT KOD)
+        # ═══════════════════════════════════════════════════════
         if p["state"] == "BUST":
             results.append(f"❌ {p['name']}: {pval} (BUST) → -{format_amount(bet)}")
             await update_win_rate(uid, "blackjack", False)
@@ -2411,27 +2515,11 @@ async def _bj_dealer(ctx, chat_id, game_id):
     results.append("✨ Yeni oyun için /blackjack yazın!")
     
     await ctx.bot.send_message(chat_id, "\n".join(results), parse_mode="HTML")
-
-    # 🎰 JACKPOT İÇİN RESULT STRING'İNİ OLUŞTUR
-    jackpot_result = f"dealer:{dval}"
     
-    for uid in bj["order"]:
-        p = bj["players"][uid]
-        pval = _hand_val(p["hand"])
-        
-        if p["state"] == "BUST":
-            jackpot_result += "|BUST"
-        elif pval < dval and dval <= 21:
-            jackpot_result += "|LOSE"
-        elif pval == dval:
-            jackpot_result += "|PUSH"
-        elif pval == 21:
-            jackpot_result += "|BLACKJACK"
-    
-    # Oyunu temizle (SADECE BİR KERE)
+    # Oyunu temizle
     del _bj[chat_id]
     await finish_game(chat_id, game_id, jackpot_result)
-    await cleanup(chat_id)
+    await cleanup(chat_id) 
     
     
     
