@@ -1022,9 +1022,8 @@ async def cmd_jackpot(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         blackjack_amount = await _get_jackpot_amount("blackjack")
         
         text = (
-            f"     🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n"
-            f"👑 <b>KRALLIK JACKPOT HAVUZLARI</b> 👑\n"
-            f"     🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n\n"
+            f"   👑<b>JACKPOT HAVUZLARI</b>👑\n"
+            f"          🔥🔥🔥🔥🔥🔥🔥\n\n"
             f"✅ <b>🎡 ÇARKIFELEK KRALLIĞI</b> ✅\n"
             f"     ══════════════════════\n"
             f"🔘 <b>HAVUZ:</b> <code>{format_amount(wheel_amount)}</code>  💵💵\n"
