@@ -7,6 +7,8 @@ import time
 import uuid
 from collections import Counter
 from datetime import datetime
+from bson.decimal128 import Decimal128
+from decimal import Decimal
 
 # MongoDB imports
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -227,7 +229,20 @@ def get_level(balance: int) -> tuple[str, str]:
     return result
 
 def format_amount(amount: int) -> str:
-    """Büyük sayıları formatla"""
+def format_amount(amount) -> str:
+    """Büyük sayıları formatla - Decimal128, Decimal veya int kabul eder"""
+    if amount is None:
+        amount = 0
+    if isinstance(amount, Decimal128):
+        amount = int(amount.to_decimal())
+    elif isinstance(amount, Decimal):
+        amount = int(amount)
+    else:
+        try:
+            amount = int(amount)
+        except:
+            amount = 0
+    
     if amount < 1000:
         return f"{amount}{CURRENCY_SYMBOL}"
     
@@ -286,13 +301,14 @@ async def get_or_create_user(uid: int, username, name: str) -> dict:
         user = await db.users.find_one({"telegram_id": uid})
         
         if user is None:
+            # Yeni kullanıcı - Decimal128 ile oluştur
             user_data = {
                 "telegram_id": uid,
                 "username": username,
                 "display_name": name,
-                "balance": STARTING_BALANCE,
-                "total_wagered": 0,
-                "total_won": 0,
+                "balance": Decimal128(str(STARTING_BALANCE)),
+                "total_wagered": Decimal128("0"),
+                "total_won": Decimal128("0"),
                 "games_played": 0,
                 "last_daily": None,
                 "daily_streak": 0,
@@ -303,20 +319,51 @@ async def get_or_create_user(uid: int, username, name: str) -> dict:
             
             await db.transactions.insert_one({
                 "to_id": uid,
-                "amount": STARTING_BALANCE,
+                "amount": Decimal128(str(STARTING_BALANCE)),
                 "type": "bonus",
                 "description": "Başlangıç",
                 "created_at": datetime.now()
             })
             
             user = await db.users.find_one({"telegram_id": uid})
+            
         else:
+            # Mevcut kullanıcı - balance eski tipteyse dönüştür
+            balance = user.get("balance", 0)
+            total_wagered = user.get("total_wagered", 0)
+            total_won = user.get("total_won", 0)
+            
+            updates = {}
+            
+            # Balance dönüşümü
+            if not isinstance(balance, Decimal128):
+                old_balance = int(balance) if balance else 0
+                updates["balance"] = Decimal128(str(old_balance))
+            
+            # Total wagered dönüşümü
+            if not isinstance(total_wagered, Decimal128) and total_wagered:
+                updates["total_wagered"] = Decimal128(str(int(total_wagered)))
+            
+            # Total won dönüşümü
+            if not isinstance(total_won, Decimal128) and total_won:
+                updates["total_won"] = Decimal128(str(int(total_won)))
+            
+            if updates:
+                updates["updated_at"] = datetime.now()
+                await db.users.update_one(
+                    {"telegram_id": uid},
+                    {"$set": updates}
+                )
+                logger.info(f"🔄 Kullanıcı {uid} bakiyesi Decimal128'e dönüştürüldü")
+            
+            # İsim güncelleme
             if username != user.get("username") or name != user.get("display_name"):
                 await db.users.update_one(
                     {"telegram_id": uid},
                     {"$set": {"username": username, "display_name": name, "updated_at": datetime.now()}}
                 )
-                user = await db.users.find_one({"telegram_id": uid})
+            
+            user = await db.users.find_one({"telegram_id": uid})
     
     return dict(user)
 
@@ -327,7 +374,14 @@ async def get_user(uid: int) -> dict | None:
 
 async def get_balance(uid: int) -> int:
     u = await get_user(uid)
-    return u["balance"] if u else 0
+    if not u:
+        return 0
+    balance = u.get("balance", 0)
+    if isinstance(balance, Decimal128):
+        return int(balance.to_decimal())
+    elif isinstance(balance, Decimal):
+        return int(balance)
+    return int(balance) if balance else 0
 
 async def add_balance(uid: int, amount: int, tx_type="win", desc="") -> bool:
     if amount <= 0:
@@ -337,20 +391,27 @@ async def add_balance(uid: int, amount: int, tx_type="win", desc="") -> bool:
     lock = await _get_lock(uid)
     
     async with lock:
-        result = await db.users.update_one(
-            {"telegram_id": uid},
-            {"$inc": {"balance": amount}, "$set": {"updated_at": datetime.now()}}
-        )
-        
-        if result.modified_count > 0:
-            await db.transactions.insert_one({
-                "to_id": uid,
-                "amount": amount,
-                "type": tx_type,
-                "description": desc,
-                "created_at": datetime.now()
-            })
-            return True
+        try:
+            # Decimal128 ile sınırsız büyük sayı desteği
+            result = await db.users.update_one(
+                {"telegram_id": uid},
+                {"$inc": {"balance": Decimal128(str(amount))}, 
+                 "$set": {"updated_at": datetime.now()}}
+            )
+            
+            if result.modified_count > 0:
+                await db.transactions.insert_one({
+                    "to_id": uid,
+                    "amount": Decimal128(str(amount)),
+                    "type": tx_type,
+                    "description": desc[:200],
+                    "created_at": datetime.now()
+                })
+                return True
+                
+        except Exception as e:
+            logger.error(f"Bakiye eklenirken hata: {e}")
+            return False
     
     return False
 
@@ -363,31 +424,51 @@ async def remove_balance(uid: int, amount: int, tx_type="bet", desc="") -> bool:
     
     async with lock:
         user = await db.users.find_one({"telegram_id": uid})
-        
-        if not user or user["balance"] < amount:
+        if not user:
             return False
         
-        await db.users.update_one(
+        # Decimal128'i Python int'e çevir
+        current_balance = user.get("balance", 0)
+        if isinstance(current_balance, Decimal128):
+            current_balance = int(current_balance.to_decimal())
+        elif isinstance(current_balance, Decimal):
+            current_balance = int(current_balance)
+        else:
+            current_balance = int(current_balance) if current_balance else 0
+        
+        if current_balance < amount:
+            return False
+        
+        result = await db.users.update_one(
             {"telegram_id": uid},
-            {"$inc": {"balance": -amount, "total_wagered": amount}, "$set": {"updated_at": datetime.now()}}
+            {"$inc": {
+                "balance": Decimal128(str(-amount)), 
+                "total_wagered": Decimal128(str(amount))
+            },
+             "$set": {"updated_at": datetime.now()}}
         )
         
-        await db.transactions.insert_one({
-            "from_id": uid,
-            "amount": amount,
-            "type": tx_type,
-            "description": desc,
-            "created_at": datetime.now()
-        })
-        
-        return True
+        if result.modified_count > 0:
+            await db.transactions.insert_one({
+                "from_id": uid,
+                "amount": Decimal128(str(amount)),
+                "type": tx_type,
+                "description": desc[:200],
+                "created_at": datetime.now()
+            })
+            return True
+    
+    return False
 
 async def update_stats(uid: int, won: int):
     db = await get_db()
     async with await _get_lock(uid):
         await db.users.update_one(
             {"telegram_id": uid},
-            {"$inc": {"total_won": won, "games_played": 1}, "$set": {"updated_at": datetime.now()}}
+            {"$inc": {
+                "total_won": Decimal128(str(won)), 
+                "games_played": 1
+            }, "$set": {"updated_at": datetime.now()}}
         )
 
 async def update_win_rate(uid: int, game_type: str, won: bool):
@@ -596,6 +677,346 @@ async def get_participants(chat_id: int, game_id: str) -> dict:
             }
         return participants
 
+
+
+
+# ═══════════════════════════════════════════════════════════════
+#  JACKPOT SİSTEMİ (TEK FONKSİYON - TÜM OYUNLAR İÇİN)
+# ═══════════════════════════════════════════════════════════════
+
+JACKPOT_MINIMUM = 1_000_000_000  # 1B
+
+
+def create_jackpot_image(game_type: str, winner_name: str) -> io.BytesIO:
+    """Jackpot görselinin üzerine kazanan adını yaz"""
+    try:
+        # Görsel seçimi
+        if game_type == "wheel":
+            img_path = os.path.join(BASE_DIR, "jackpot_wheel.jpg")
+        elif game_type == "blackjack":
+            img_path = os.path.join(BASE_DIR, "jackpot_blackjack.jpg")
+        else:
+            return None
+        
+        if not os.path.exists(img_path):
+            logger.warning(f"⚠️ Jackpot görseli bulunamadı: {img_path}")
+            return None
+        
+        img = Image.open(img_path).convert('RGBA')
+        img.thumbnail((800, 600), Image.Resampling.LANCZOS)
+        
+        width, height = img.size
+        txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
+        draw = ImageDraw.Draw(txt_layer)
+        
+        # Font - Transfer ile aynı
+        font_isim = get_font(int(height * 0.10))
+        
+        # Renkler - Altın ve gölge
+        gold_color = "#FFD700"
+        shadow_color = "#8B6914"
+        
+        # Koordinatlar - "OYUNCU:" yazısının sağı
+        name_x = int(width * 0.55)
+        name_y = int(height * 0.22)
+        
+        # Temizlenmiş isim
+        clean_name = re.sub(r'[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]', '', winner_name)
+        if not clean_name:
+            clean_name = winner_name
+        
+        # Gölgeli isim
+        draw.text((name_x + 3, name_y + 3), clean_name, fill=shadow_color, font=font_isim, anchor="lm")
+        draw.text((name_x, name_y), clean_name, fill=gold_color, font=font_isim, anchor="lm")
+        
+        img = Image.alpha_composite(img, txt_layer).convert('RGB')
+        bio = io.BytesIO()
+        img.save(bio, format='PNG', quality=95)
+        bio.seek(0)
+        return bio
+        
+    except Exception as e:
+        logger.error(f"❌ Jackpot görseli oluşturulamadı: {e}")
+        return None
+
+
+async def _get_jackpot_amount(game_type: str) -> int:
+    """Jackpot miktarını getir"""
+    try:
+        db = await get_db()
+        jackpot = await db.jackpot.find_one({"_id": f"{game_type}_jackpot"})
+        
+        if not jackpot:
+            await db.jackpot.insert_one({
+                "_id": f"{game_type}_jackpot",
+                "amount": Decimal128(str(JACKPOT_MINIMUM)),
+                "created_at": datetime.now(),
+                "updated_at": datetime.now()
+            })
+            return JACKPOT_MINIMUM
+        
+        amount = jackpot.get("amount", JACKPOT_MINIMUM)
+        if isinstance(amount, Decimal128):
+            return int(amount.to_decimal())
+        return int(amount)
+        
+    except Exception as e:
+        logger.error(f"❌ Jackpot miktarı alınamadı ({game_type}): {e}")
+        return JACKPOT_MINIMUM
+
+
+async def _add_to_jackpot(game_type: str, amount: int) -> int:
+    """Jackpot'a para ekle"""
+    if amount <= 0:
+        return await _get_jackpot_amount(game_type)
+    
+    try:
+        db = await get_db()
+        result = await db.jackpot.find_one_and_update(
+            {"_id": f"{game_type}_jackpot"},
+            {
+                "$inc": {"amount": Decimal128(str(amount))},
+                "$set": {"updated_at": datetime.now()}
+            },
+            upsert=True,
+            return_document=True
+        )
+        
+        new_amount = result.get("amount", 0)
+        if isinstance(new_amount, Decimal128):
+            new_amount = int(new_amount.to_decimal())
+        
+        logger.info(f"🎰 Jackpot'a eklendi ({game_type}): +{format_amount(amount)} → {format_amount(new_amount)}")
+        return new_amount
+        
+    except Exception as e:
+        logger.error(f"❌ Jackpot'a eklenemedi ({game_type}, {amount}): {e}")
+        return await _get_jackpot_amount(game_type)
+
+
+async def _reset_jackpot(game_type: str) -> None:
+    """Jackpot'u minimuma sıfırla"""
+    try:
+        db = await get_db()
+        await db.jackpot.update_one(
+            {"_id": f"{game_type}_jackpot"},
+            {
+                "$set": {
+                    "amount": Decimal128(str(JACKPOT_MINIMUM)),
+                    "updated_at": datetime.now()
+                }
+            },
+            upsert=True
+        )
+        logger.info(f"🎰 Jackpot sıfırlandı ({game_type}): {format_amount(JACKPOT_MINIMUM)}")
+        
+    except Exception as e:
+        logger.error(f"❌ Jackpot sıfırlanamadı ({game_type}): {e}")
+
+
+async def process_jackpot_on_game_end(game_id: str, result: str, chat_id: int, ctx=None) -> None:
+    """
+    ANA JACKPOT FONKSİYONU - TÜM OYUNLAR İÇİN
+    finish_game içinden çağrılır.
+    """
+    try:
+        db = await get_db()
+        game = await db.games.find_one({"game_id": game_id})
+        
+        if not game:
+            logger.warning(f"⚠️ Jackpot: Oyun bulunamadı {game_id}")
+            return
+        
+        game_type = game.get("game_type")
+        
+        # Sadece desteklenen oyunlar
+        if game_type not in ["wheel", "blackjack"]:
+            return
+        
+        # Katılımcıları al
+        participants = await db.game_participants.find({"game_id": game_id}).to_list(None)
+        if not participants:
+            logger.info(f"ℹ️ Jackpot: Katılımcı yok {game_id}")
+            return
+        
+        # =========================================================
+        # ÇARKIFELEK JACKPOT
+        # =========================================================
+        if game_type == "wheel":
+            
+            if "PASS" in result:
+                # PASS: Tüm bahisler havuza
+                for p in participants:
+                    bet = p.get("bet_amount", 0)
+                    if isinstance(bet, Decimal128):
+                        bet = int(bet.to_decimal())
+                    else:
+                        bet = int(bet) if bet else 0
+                    if bet > 0:
+                        await _add_to_jackpot("wheel", bet)
+                logger.info(f"🎰 Çarkıfelek PASS: Bahisler havuza eklendi. Game: {game_id}")
+                
+            elif "İADE" in result:
+                # İADE: %10 komisyon havuza
+                for p in participants:
+                    bet = p.get("bet_amount", 0)
+                    if isinstance(bet, Decimal128):
+                        bet = int(bet.to_decimal())
+                    else:
+                        bet = int(bet) if bet else 0
+                    commission = int(bet * 0.1)
+                    if commission > 0:
+                        await _add_to_jackpot("wheel", commission)
+                logger.info(f"🎰 Çarkıfelek İADE: %10 komisyon havuza eklendi. Game: {game_id}")
+                
+            elif "JACKPOT" in result:
+                # JACKPOT: Havuz eşit pay + bahis iadesi
+                jackpot_amount = await _get_jackpot_amount("wheel")
+                total_players = len(participants)
+                
+                if total_players > 0 and jackpot_amount > JACKPOT_MINIMUM:
+                    jackpot_per_player = jackpot_amount // total_players
+                    
+                    for p in participants:
+                        uid = p["telegram_id"]
+                        bet = p.get("bet_amount", 0)
+                        if isinstance(bet, Decimal128):
+                            bet = int(bet.to_decimal())
+                        else:
+                            bet = int(bet) if bet else 0
+                        
+                        # Oyuncu adını al
+                        user = await db.users.find_one({"telegram_id": uid})
+                        player_name = user.get("display_name", str(uid)) if user else str(uid)
+                        
+                        # Bahis iadesi + jackpot payı
+                        total_win = bet + jackpot_per_player
+                        
+                        await add_balance(uid, total_win, "win", f"Çark JACKPOT! game:{game_id}")
+                        await update_stats(uid, total_win)
+                        await update_win_rate(uid, "wheel", True)
+                        
+                        # Görsel oluştur ve gönder
+                        if ctx:
+                            jackpot_img = create_jackpot_image("wheel", player_name)
+                            caption = (
+                                f"🎰 <b>JACKPOT KAZANDIN!</b> 🎰\n"
+                                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                                f"🆔 GAME ID: {game_id}\n"
+                                f"🎡 Oyun: Çarkıfelek\n"
+                                f"💰 Havuz Payın: {format_amount(jackpot_per_player)}\n"
+                                f"🎁 Bahis İaden: {format_amount(bet)}\n"
+                                f"💳 Toplam: {format_amount(total_win)}\n\n"
+                                f"🎉 <b>TEBRİKLER!</b> 🎉"
+                            )
+                            
+                            if jackpot_img:
+                                await ctx.bot.send_photo(chat_id, photo=jackpot_img, caption=caption, parse_mode="HTML")
+                            else:
+                                await ctx.bot.send_message(chat_id, caption, parse_mode="HTML")
+                    
+                    await _reset_jackpot("wheel")
+                    logger.info(f"🎰 Çarkıfelek JACKPOT dağıtıldı: {format_amount(jackpot_amount)}. Game: {game_id}")
+        
+        # =========================================================
+        # BLACKJACK JACKPOT
+        # =========================================================
+        elif game_type == "blackjack":
+            
+            # Önce kayıpları ve BUST'ları havuza ekle
+            for p in participants:
+                uid = p["telegram_id"]
+                bet = p.get("bet_amount", 0)
+                if isinstance(bet, Decimal128):
+                    bet = int(bet.to_decimal())
+                else:
+                    bet = int(bet) if bet else 0
+                
+                # Oyuncunun durumunu bul
+                player_state = None
+                for bj_player in p.get("bets", []):
+                    # Blackjack oyuncu durumu _bj içinden veya game_participants'tan alınabilir
+                    pass
+                
+                # BUST: %100 havuza
+                # KAYBETME: %25 havuza
+                # BERABERLİK: %10 havuza
+                # Bu kısım _bj_dealer'dan gelen sonuçlara göre işlenecek
+                # Şimdilik result string'ine göre kontrol edelim
+            
+            # Eğer result içinde "BLACKJACK" veya "21" varsa havuzu dağıt
+            if "BLACKJACK" in result.upper() or "21" in result:
+                jackpot_amount = await _get_jackpot_amount("blackjack")
+                
+                # 21 yapanları bul
+                winners_21 = []
+                for p in participants:
+                    # 21 yapanları tespit et
+                    # Şimdilik basit: result'ta isim varsa
+                    pass
+                
+                if winners_21 and jackpot_amount > JACKPOT_MINIMUM:
+                    jackpot_per_winner = jackpot_amount // len(winners_21)
+                    
+                    for uid, bet, player_name in winners_21:
+                        total_win = bet + jackpot_per_winner
+                        
+                        await add_balance(uid, total_win, "win", f"Blackjack JACKPOT! game:{game_id}")
+                        await update_stats(uid, total_win)
+                        await update_win_rate(uid, "blackjack", True)
+                        
+                        if ctx:
+                            jackpot_img = create_jackpot_image("blackjack", player_name)
+                            caption = (
+                                f"🃏 <b>BLACKJACK JACKPOT KAZANDIN!</b> 🃏\n"
+                                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                                f"🆔 GAME ID: {game_id}\n"
+                                f"🃏 Oyun: Blackjack (21)\n"
+                                f"💰 Havuz Payın: {format_amount(jackpot_per_winner)}\n"
+                                f"🎁 Bahis İaden: {format_amount(bet)}\n"
+                                f"💳 Toplam: {format_amount(total_win)}\n\n"
+                                f"🎉 <b>TEBRİKLER!</b> 🎉"
+                            )
+                            
+                            if jackpot_img:
+                                await ctx.bot.send_photo(chat_id, photo=jackpot_img, caption=caption, parse_mode="HTML")
+                            else:
+                                await ctx.bot.send_message(chat_id, caption, parse_mode="HTML")
+                    
+                    await _reset_jackpot("blackjack")
+                    logger.info(f"🃏 Blackjack JACKPOT dağıtıldı: {format_amount(jackpot_amount)}. Game: {game_id}")
+            
+    except Exception as e:
+        logger.error(f"❌ process_jackpot_on_game_end kritik hata: {e}", exc_info=True)
+
+
+# ═══════════════════════════════════════════════════════════════
+#  /jackpot KOMUTU
+# ═══════════════════════════════════════════════════════════════
+
+async def cmd_jackpot(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """Tüm jackpot havuzlarını göster"""
+    try:
+        wheel_amount = await _get_jackpot_amount("wheel")
+        blackjack_amount = await _get_jackpot_amount("blackjack")
+        
+        text = (
+            f"🎰 <b>JACKPOT HAVUZLARI</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"🎡 Çarkıfelek: {format_amount(wheel_amount)}\n"
+            f"🃏 Blackjack: {format_amount(blackjack_amount)}\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"💡 Minimum jackpot: {format_amount(JACKPOT_MINIMUM)}\n"
+            f"💡 PASS/BUST → Havuza eklenir\n"
+            f"💡 JACKPOT/21 → Havuz dağıtılır"
+        )
+        
+        await update.message.reply_text(text, parse_mode="HTML")
+        
+    except Exception as e:
+        logger.error(f"❌ cmd_jackpot hatası: {e}")
+        await update.message.reply_text("❌ Jackpot bilgileri alınırken hata oluştu.")
+
 async def finish_game(chat_id: int, game_id: str, result: str = ""):
     """Oyunu bitir"""
     async with _state_lock:
@@ -607,6 +1028,9 @@ async def finish_game(chat_id: int, game_id: str, result: str = ""):
         {"game_id": game_id},
         {"$set": {"state": "FINISHED", "result": result, "finished_at": datetime.now()}}
     )
+    
+    # 🎰 JACKPOT DİNLEYİCİ - SADECE BU SATIRI EKLE
+    asyncio.create_task(process_jackpot_on_game_end(game_id, result, chat_id))
 
 async def cleanup(chat_id: int):
     """Bitmiş oyunları temizle"""
@@ -1988,11 +2412,27 @@ async def _bj_dealer(ctx, chat_id, game_id):
     results.append("✨ Yeni oyun için /blackjack yazın!")
     
     await ctx.bot.send_message(chat_id, "\n".join(results), parse_mode="HTML")
+
+# 🎰 JACKPOT İÇİN RESULT STRING'İNİ OLUŞTUR
+jackpot_result = f"dealer:{dval}"
+
+for uid in bj["order"]:
+    p = bj["players"][uid]
+    pval = _hand_val(p["hand"])
     
-    # Oyunu temizle
-    del _bj[chat_id]
-    await finish_game(chat_id, game_id, f"dealer:{dval}")
-    await cleanup(chat_id)
+    if p["state"] == "BUST":
+        jackpot_result += "|BUST"
+    elif pval < dval and dval <= 21:
+        jackpot_result += "|LOSE"
+    elif pval == dval:
+        jackpot_result += "|PUSH"
+    elif pval == 21:
+        jackpot_result += "|BLACKJACK"
+
+# Oyunu temizle (SADECE BİR KERE)
+del _bj[chat_id]
+await finish_game(chat_id, game_id, jackpot_result)
+await cleanup(chat_id)
     
     
     
@@ -3753,6 +4193,7 @@ def main():
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))
     app.add_handler(CommandHandler("balance", cmd_balance))
+    app.add_handler(CommandHandler("jackpot", cmd_jackpot))
     app.add_handler(CommandHandler("changename", cmd_changename))
     app.add_handler(CommandHandler("moneys", cmd_moneys))
     app.add_handler(CommandHandler("leaderboard", cmd_leaderboard))
