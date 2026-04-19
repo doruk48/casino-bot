@@ -735,7 +735,7 @@ def create_jackpot_image(game_type: str, winner_name: str) -> io.BytesIO:
         
         # Koordinatlar - "OYUNCU:" yazısının sağı
         name_x = int(width * 0.59)
-        name_y = int(height * 0.27)
+        name_y = int(height * 0.29)
         
         # Temizlenmiş isim
         clean_name = re.sub(r'[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]', '', winner_name)
