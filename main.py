@@ -2400,7 +2400,6 @@ async def _bj_dealer(ctx, chat_id, game_id):
         elif pval == dval:
             await add_balance(uid, bet, "refund", f"BJ game:{game_id}")
             results.append(f"🤝 {p['name']}: {pval} vs {dval} → İADE")
-            # Beraberlikte win rate değişmez
             
         else:
             results.append(f"❌ {p['name']}: {pval} vs {dval} → -{format_amount(bet)}")
@@ -2412,27 +2411,26 @@ async def _bj_dealer(ctx, chat_id, game_id):
     
     await ctx.bot.send_message(chat_id, "\n".join(results), parse_mode="HTML")
 
-# 🎰 JACKPOT İÇİN RESULT STRING'İNİ OLUŞTUR
-jackpot_result = f"dealer:{dval}"
-
-for uid in bj["order"]:
-    p = bj["players"][uid]
-    pval = _hand_val(p["hand"])
+    # 🎰 JACKPOT İÇİN RESULT STRING'İNİ OLUŞTUR
+    jackpot_result = f"dealer:{dval}"
     
-    if p["state"] == "BUST":
-        jackpot_result += "|BUST"
-    elif pval < dval and dval <= 21:
-        jackpot_result += "|LOSE"
-    elif pval == dval:
-        jackpot_result += "|PUSH"
-    elif pval == 21:
-        jackpot_result += "|BLACKJACK"
-
-# Oyunu temizle (SADECE BİR KERE)
-del _bj[chat_id]
-await finish_game(chat_id, game_id, jackpot_result)
-await cleanup(chat_id)
+    for uid in bj["order"]:
+        p = bj["players"][uid]
+        pval = _hand_val(p["hand"])
+        
+        if p["state"] == "BUST":
+            jackpot_result += "|BUST"
+        elif pval < dval and dval <= 21:
+            jackpot_result += "|LOSE"
+        elif pval == dval:
+            jackpot_result += "|PUSH"
+        elif pval == 21:
+            jackpot_result += "|BLACKJACK"
     
+    # Oyunu temizle (SADECE BİR KERE)
+    del _bj[chat_id]
+    await finish_game(chat_id, game_id, jackpot_result)
+    await cleanup(chat_id)
     
     
     
