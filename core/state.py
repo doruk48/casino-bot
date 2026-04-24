@@ -136,11 +136,11 @@ async def add_participant(chat_id: int, game_id: str, uid: int, bet: int, bet_da
         all_bets.append({"bet": b["bet"], "bet_data": b["bet_data"]})
         total_bet += b["bet"]
     
-    await db.game_participants.update_one(
-        {"game_id": game_id, "telegram_id": uid},
-        {"$set": {"bets": all_bets, "bet_amount": Decimal128(str(total_bet)), "updated_at": datetime.now()}},
-        upsert=True
-    )
+     # await db.game_participants.update_one(
+#     {"game_id": game_id, "telegram_id": uid},
+#     {"$set": {"bets": all_bets, "bet_amount": Decimal128(str(total_bet)), "updated_at": datetime.now()}},
+#     upsert=True
+# )
 
 async def get_participants(chat_id: int, game_id: str) -> dict:
     async with _state_lock:
