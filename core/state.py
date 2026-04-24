@@ -72,10 +72,9 @@ async def finish_game(chat_id: int, game_id: str, result: str = "", ctx=None):
         {"$set": {"state": "FINISHED", "result": result, "finished_at": datetime.now()}}
     )
     
-    # Jackpot dinleyici (ileride eklenecek)
-    # from features.jackpot import process_jackpot_on_game_end
-    # asyncio.create_task(process_jackpot_on_game_end(game_id, result, chat_id, ctx))
-
+    # Jackpot dinleyici
+    from features.jackpot import process_jackpot_on_game_end
+    asyncio.create_task(process_jackpot_on_game_end(game_id, result, chat_id, ctx))
 async def cleanup(chat_id: int):
     async with _state_lock:
         if chat_id in _active_games:
