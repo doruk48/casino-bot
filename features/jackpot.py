@@ -1,4 +1,4 @@
-# features/jackpot.py - Jackpot Sistemi
+# features/jackpot.py - Jackpot Sistemi (String Tabanlı Bahis Desteği)
 import asyncio
 from datetime import datetime
 from bson.decimal128 import Decimal128
@@ -11,6 +11,20 @@ from core.stats import update_stats, update_win_rate
 from core.users import get_user
 from utils.format import format_amount, logger
 from utils.images import create_jackpot_image
+
+# ═══════════════════════════════════════════════════════════════
+#  YARDIMCI FONKSİYON: String veya Decimal128'i int'e çevir
+# ═══════════════════════════════════════════════════════════════
+def _parse_bet(bet) -> int:
+    """String, Decimal128 veya int olarak gelen bahsi int'e çevir"""
+    if isinstance(bet, str):
+        return int(bet)
+    elif isinstance(bet, Decimal128):
+        return int(bet.to_decimal())
+    elif isinstance(bet, Decimal):
+        return int(bet)
+    else:
+        return int(bet) if bet else 0
 
 # ═══════════════════════════════════════════════════════════════
 #  JACKPOT HAVUZ İŞLEMLERİ
@@ -112,22 +126,14 @@ async def process_jackpot_on_game_end(game_id: str, result: str, chat_id: int, c
             
             if "PASS" in result:
                 for p in participants:
-                    bet = p.get("bet_amount", 0)
-                    if isinstance(bet, Decimal128):
-                        bet = int(bet.to_decimal())
-                    else:
-                        bet = int(bet) if bet else 0
+                    bet = _parse_bet(p.get("bet_amount", 0))
                     if bet > 0:
                         await _add_to_jackpot("wheel", bet)
                 logger.info(f"🎰 Çarkıfelek PASS: Bahisler havuza eklendi. Game: {game_id}")
                 
             elif "İADE" in result:
                 for p in participants:
-                    bet = p.get("bet_amount", 0)
-                    if isinstance(bet, Decimal128):
-                        bet = int(bet.to_decimal())
-                    else:
-                        bet = int(bet) if bet else 0
+                    bet = _parse_bet(p.get("bet_amount", 0))
                     commission = int(bet * 0.1)
                     if commission > 0:
                         await _add_to_jackpot("wheel", commission)
@@ -142,11 +148,7 @@ async def process_jackpot_on_game_end(game_id: str, result: str, chat_id: int, c
                     
                     for p in participants:
                         uid = p["telegram_id"]
-                        bet = p.get("bet_amount", 0)
-                        if isinstance(bet, Decimal128):
-                            bet = int(bet.to_decimal())
-                        else:
-                            bet = int(bet) if bet else 0
+                        bet = _parse_bet(p.get("bet_amount", 0))
                         
                         user = await get_user(uid)
                         player_name = user.get("display_name", str(uid)) if user else str(uid)
