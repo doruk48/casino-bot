@@ -78,8 +78,13 @@ async def remove_balance(uid: int, amount: int, tx_type="bet", desc="") -> bool:
         else:
             current_balance = int(current_balance) if current_balance else 0
         
-        if current_balance < amount:
-            return False
+        try:
+            if current_balance < amount:
+                return False
+        except:
+            # Karşılaştırma yapılamazsa, string olarak karşılaştır
+            if str(current_balance) < str(amount):
+                return False
         
         try:
             amount_str = str(amount)
