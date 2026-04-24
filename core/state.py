@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from core.database import get_db
 from config import MAX_OPEN_GAMES, RATE_LIMIT_SECONDS
+from bson.decimal128 import Decimal128
 
 # Aktif oyunlar (RAM'de tutulur)
 _active_games: dict[int, dict[str, dict]] = {}
@@ -137,7 +138,7 @@ async def add_participant(chat_id: int, game_id: str, uid: int, bet: int, bet_da
     
     await db.game_participants.update_one(
         {"game_id": game_id, "telegram_id": uid},
-        {"$set": {"bets": all_bets, "bet_amount": total_bet, "updated_at": datetime.now()}},
+        {"$set": {"bets": all_bets, "bet_amount": Decimal128(str(total_bet)), "updated_at": datetime.now()}},
         upsert=True
     )
 
