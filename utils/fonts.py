@@ -1,15 +1,15 @@
-# utils/fonts.py - Font Yönetimi (Dockerfile Orijinal Ayarları)
+# utils/fonts.py - Font Yönetimi (Sabit Piksel Desteği)
 import os
 from PIL import ImageFont
 
 _font_cache = {}
 
 def get_font(size: int):
-    """Sistemdeki fontları dene, hiçbiri yoksa default kullan"""
+    """Sistemdeki fontları dene, hiçbiri yoksa default kullan.
+       Artık size parametresi olarak doğrudan piksel değeri (82, 110, 50) alır."""
     if size in _font_cache:
         return _font_cache[size]
     
-    # Dockerfile'da yüklü olan fontlar
     font_paths = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
