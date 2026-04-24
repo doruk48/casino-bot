@@ -70,22 +70,25 @@ async def remove_balance(uid: int, amount: int, tx_type="bet", desc="") -> bool:
         if not user:
             return False
         
-        current_balance = user.get("balance", 0)
-        if isinstance(current_balance, Decimal128):
-            current_balance = int(current_balance.to_decimal())
-        elif isinstance(current_balance, Decimal):
-            current_balance = int(current_balance)
-        else:
-            current_balance = int(current_balance) if current_balance else 0
-        
+        # Mevcut bakiyeyi güvenli şekilde int'e çevir
         try:
-            if current_balance < amount:
-                return False
+            current_balance = user.get("balance", 0)
+            if isinstance(current_balance, Decimal128):
+                current_balance = int(current_balance.to_decimal())
+            elif isinstance(current_balance, Decimal):
+                current_balance = int(current_balance)
+            else:
+                current_balance = int(current_balance)
         except:
-            # Karşılaştırma yapılamazsa, string olarak karşılaştır
-            if str(current_balance) < str(amount):
-                return False
+            from utils.format import logger
+            logger.error(f"Bakiye dönüşüm hatası: {current_balance}")
+            return False
         
+        # Bakiye kontrolü
+        if current_balance < amount:
+            return False
+        
+        # Decimal128 dönüşümü ve veritabanı güncelleme
         try:
             amount_str = str(amount)
             dec_amount = Decimal128(amount_str)
@@ -106,6 +109,9 @@ async def remove_balance(uid: int, amount: int, tx_type="bet", desc="") -> bool:
                     "created_at": datetime.now()
                 })
                 return True
+            else:
+                return False
+                
         except Exception as e:
             from utils.format import logger
             logger.error(f"Bakiye düşülürken hata: {e}")
