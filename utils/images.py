@@ -1,4 +1,4 @@
-# utils/images.py - Görsel İşlemleri
+# utils/images.py - Görsel İşlemleri (Dockerfile Fontlarıyla Optimize Edildi)
 import io
 import os
 import re
@@ -24,7 +24,7 @@ def get_cached_image(path: str) -> io.BytesIO | None:
     return bio
 
 # ═══════════════════════════════════════════════════════════════
-#  TRANSFER GÖRSELİ
+#  TRANSFER GÖRSELİ (Eski orijinal boyutlara göre ayarlandı)
 # ═══════════════════════════════════════════════════════════════
 def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO:
     transfer_template = os.path.join(BASE_DIR, "transfer.png")
@@ -40,6 +40,7 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
     txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(txt_layer)
     
+    # Dockerfile fontu optimize edildi: 0.10, 0.13, 0.067 (Eski orijinal değerler)
     font_isim = get_font(int(height * 0.10))
     font_miktar = get_font(int(height * 0.13))
     font_token = get_font(int(height * 0.067))
@@ -68,7 +69,7 @@ def create_transfer_image(sender: str, receiver: str, amount: int) -> io.BytesIO
     return bio
 
 # ═══════════════════════════════════════════════════════════════
-#  ZAR GÖRSELLERİ
+#  ZAR GÖRSELLERİ (Boyutlar ve fontlar eski orijinaller ile aynı)
 # ═══════════════════════════════════════════════════════════════
 def create_dice_image(number: int) -> io.BytesIO:
     size = 80
@@ -112,7 +113,7 @@ def create_total_card(total: int) -> io.BytesIO:
     draw.rounded_rectangle([7, 7, size-8, size-8], radius=7, outline='#DAA520', width=1)
     
     try:
-        font = get_font(42)
+        font = get_font(42) # Zar toplamı için optimize edilmiş font boyutu
         bbox = draw.textbbox((0, 0), str(total), font=font)
         tw = bbox[2] - bbox[0]
         th = bbox[3] - bbox[1]
@@ -148,7 +149,7 @@ def combine_dice_with_total(dice1: int, dice2: int) -> io.BytesIO:
     return bio
 
 # ═══════════════════════════════════════════════════════════════
-#  JACKPOT GÖRSELİ
+#  JACKPOT GÖRSELİ (Font ve koordinatlar eski orijinaller ile aynı)
 # ═══════════════════════════════════════════════════════════════
 def create_jackpot_image(game_type: str, winner_name: str) -> io.BytesIO | None:
     try:
@@ -169,12 +170,12 @@ def create_jackpot_image(game_type: str, winner_name: str) -> io.BytesIO | None:
         txt_layer = Image.new('RGBA', img.size, (255, 255, 255, 0))
         draw = ImageDraw.Draw(txt_layer)
         
-        font_isim = get_font(int(height * 0.10))
+        font_isim = get_font(int(height * 0.10)) # Transfer ile aynı font boyutu
         gold_color = "#FFFFFF"
         shadow_color = "#1a1a1a"
         
-        name_x = int(width * 0.60)
-        name_y = int(height * 0.25)
+        name_x = int(width * 0.60) # 'OYUNCU' yazısının sağı
+        name_y = int(height * 0.25) # Aynı hizada
         
         clean_name = re.sub(r'[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]', '', winner_name)
         if not clean_name:
@@ -196,8 +197,9 @@ def create_jackpot_image(game_type: str, winner_name: str) -> io.BytesIO | None:
         logger.error(f"Jackpot görseli oluşturulamadı: {e}")
         return None
 
+
 # ═══════════════════════════════════════════════════════════════
-#  KAZI KAZAN GÖRSELİ
+#  KAZI KAZAN GÖRSELİ (Font ve koordinatlar eski orijinaller ile aynı)
 # ═══════════════════════════════════════════════════════════════
 def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     acik_kart = os.path.join(BASE_DIR, "acik.jpg")
@@ -209,7 +211,7 @@ def create_scratch_result_image(board: list, winner_mult: int) -> io.BytesIO:
     
     img.thumbnail((800, 600), Image.Resampling.LANCZOS)
     draw = ImageDraw.Draw(img)
-    font = get_font(100)
+    font = get_font(100) # Eski orijinal font boyutu
     
     width, height = img.size
     
