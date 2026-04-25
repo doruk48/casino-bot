@@ -36,9 +36,7 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"🔢 /numbers &lt;1,2,3,...&gt; &lt;miktar&gt;"
     )
     
-    # ═══════════════════════════════════════════════════════════
-    # SON 20 SAYIYI EKLE (caption'a eklenir)
-    # ═══════════════════════════════════════════════════════════
+    # SON 20 SAYI
     try:
         from core.database import get_db
         db = await get_db()
@@ -86,8 +84,9 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             
             if lines:
                 caption += f"\n\n📊 <b>SON {len(last_numbers)} SAYI</b>\n\n" + "\n".join(lines)
-    except:
-        pass
+    except Exception as e:
+        from utils.format import logger
+        logger.error(f"Son 20 sayı hatası: {e}")
     
     try:
         if os.path.exists(spin_img_path):
