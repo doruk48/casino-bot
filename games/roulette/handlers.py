@@ -36,6 +36,57 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"🔢 /numbers &lt;1,2,3,...&gt; &lt;miktar&gt;"
     )
     
+    # ═══════════════════════════════════════════════════════════
+    # SON 20 SAYIYI EKLE (caption'a eklenir)
+    # ═══════════════════════════════════════════════════════════
+    try:
+        from core.database import get_db
+        db = await get_db()
+        last_games = await db.games.find(
+            {"game_type": "roulette", "state": "FINISHED"}
+        ).sort("finished_at", -1).limit(20).to_list(length=20)
+        
+        last_numbers = []
+        for g in last_games:
+            result = g.get("result", "")
+            if result.isdigit():
+                last_numbers.append(int(result))
+        
+        if last_numbers:
+            last_numbers = list(reversed(last_numbers))
+            
+            box_nums = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣"]
+            
+            def to_box(num):
+                if num < 10:
+                    return f"0️⃣{box_nums[num]}"
+                elif num < 20:
+                    return f"1️⃣{box_nums[num-10]}"
+                else:
+                    return f"2️⃣0️⃣"
+            
+            lines = []
+            for row in range(5):
+                row_items = []
+                for col in range(4):
+                    idx = row + col * 5
+                    if idx < 20:
+                        n = last_numbers[idx]
+                        color = ROUL_COLORS.get(n, "black")
+                        emoji = ROUL_EMOJI.get(color, "⚫")
+                        num = 20 - idx
+                        box = to_box(num)
+                        sn = f"{n:02d}"
+                        if idx == 0:
+                            row_items.append(f"{box}{emoji}{sn}SON")
+                        else:
+                            row_items.append(f"{box}{emoji}{sn}")
+                lines.append("   ".join(row_items))
+            
+            caption += f"\n\n📊 <b>SON 20 SAYI</b>\n\n" + "\n".join(lines)
+    except:
+        pass
+    
     try:
         if os.path.exists(spin_img_path):
             with open(spin_img_path, "rb") as photo:
