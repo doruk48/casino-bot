@@ -36,16 +36,16 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"🔢 /numbers &lt;1,2,3,...&gt; &lt;miktar&gt;"
     )
     
-    # SON 20 SAYI
+    # SON 20 SAYI - Async döngü ile
     try:
         from core.database import get_db
         db = await get_db()
-        last_games = await db.games.find(
+        cursor = db.games.find(
             {"game_type": "roulette", "state": "FINISHED"}
-        ).sort("finished_at", -1).limit(20).to_list(length=None)
+        ).sort("finished_at", -1).limit(20)
         
         last_numbers = []
-        for g in last_games:
+        async for g in cursor:
             result = g.get("result", "")
             if result.isdigit():
                 last_numbers.append(int(result))
@@ -84,9 +84,8 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             
             if lines:
                 caption += f"\n\n📊 <b>SON {len(last_numbers)} SAYI</b>\n\n" + "\n".join(lines)
-    except Exception as e:
-        from utils.format import logger
-        logger.error(f"Son 20 sayı hatası: {e}")
+    except:
+        pass
     
     try:
         if os.path.exists(spin_img_path):
@@ -105,7 +104,6 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             _active_games[chat_id][game_id]["message_id"] = msg.message_id
     
     asyncio.create_task(_roulette_timer(ctx, chat_id, game_id, msg))
-    
 async def cmd_green(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if not ctx.args:
         await update.message.reply_text("❌ Kullanım: /green <miktar>")
