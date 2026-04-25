@@ -6,7 +6,7 @@ import random
 # ═══════════════════════════════════════════════════════════════
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 MONGO_URI = os.getenv("MONGO_URI", "")
-DATABASE_NAME = "casinobot"
+DATABASE_NAME = "casino-bot"
 
 # ═══════════════════════════════════════════════════════════════
 #  OYUN AYARLARI
