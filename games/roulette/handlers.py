@@ -44,7 +44,7 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         db = await get_db()
         last_games = await db.games.find(
             {"game_type": "roulette", "state": "FINISHED"}
-        ).sort("finished_at", -1).limit(20).to_list(length=20)
+        ).sort("finished_at", -1).limit(20).to_list(length=None)
         
         last_numbers = []
         for g in last_games:
@@ -70,7 +70,7 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 row_items = []
                 for col in range(4):
                     idx = row + col * 5
-                    if idx < 20:
+                    if idx < len(last_numbers):
                         n = last_numbers[idx]
                         color = ROUL_COLORS.get(n, "black")
                         emoji = ROUL_EMOJI.get(color, "⚫")
@@ -81,9 +81,11 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                             row_items.append(f"{box}{emoji}{sn}SON")
                         else:
                             row_items.append(f"{box}{emoji}{sn}")
-                lines.append("   ".join(row_items))
+                if row_items:
+                    lines.append("   ".join(row_items))
             
-            caption += f"\n\n📊 <b>SON 20 SAYI</b>\n\n" + "\n".join(lines)
+            if lines:
+                caption += f"\n\n📊 <b>SON {len(last_numbers)} SAYI</b>\n\n" + "\n".join(lines)
     except:
         pass
     
@@ -104,7 +106,7 @@ async def cmd_rulet(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             _active_games[chat_id][game_id]["message_id"] = msg.message_id
     
     asyncio.create_task(_roulette_timer(ctx, chat_id, game_id, msg))
-
+    
 async def cmd_green(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if not ctx.args:
         await update.message.reply_text("❌ Kullanım: /green <miktar>")
