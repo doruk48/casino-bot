@@ -135,7 +135,7 @@ async def add_participant(chat_id: int, game_id: str, uid: int, bet: int, bet_da
         all_bets.append({"bet": b["bet"], "bet_data": b["bet_data"]})
         total_bet += b["bet"]
     
-  # await db.game_participants.update_one(
+# await db.game_participants.update_one(
 #     {"game_id": game_id, "telegram_id": uid},
 #     {"$set": {"bets": all_bets, "bet_amount": str(total_bet), "updated_at": datetime.now()}},
 #     upsert=True
