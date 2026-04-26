@@ -221,10 +221,12 @@ async def bj_callback(update, ctx: ContextTypes.DEFAULT_TYPE):
 #  KURPİYERİN SIRASI VE FİNAL
 # ═══════════════════════════════════════════════════════════════
 async def _bj_dealer(ctx, chat_id, game_id):
+    """Kurpiyerin sırası ve final sonuçları"""
     bj = _bj.get(chat_id)
     if not bj or bj["game_id"] != game_id:
         return
     
+    # Kurpiyer 17'ye kadar kart çeker
     hand = bj["dealer"]
     while _hand_val(hand) < 17:
         hand.append(bj["deck"].pop())
@@ -239,6 +241,7 @@ async def _bj_dealer(ctx, chat_id, game_id):
         parse_mode="HTML"
     )
     
+    # Final tablosu
     results = [
         f"🏁 <b>BLACKJACK - FİNAL TABLOSU</b>",
         f"━━━━━━━━━━━━━━━━━━━━━"
@@ -253,27 +256,33 @@ async def _bj_dealer(ctx, chat_id, game_id):
         bet = p["bet"]
         
         # ═══════════════════════════════════════════════════════
-        # JACKPOT İŞLEMLERİ
+        # JACKPOT İŞLEMLERİ (ÖNCE HAVUZA EKLEME)
         # ═══════════════════════════════════════════════════════
         if p["state"] == "BUST":
+            # BUST: Bahsin %100'ü havuza
             await _add_to_jackpot("blackjack", bet)
             jackpot_result += "|BUST"
             
         elif pval < dval and dval <= 21:
+            # Kaybetme: Bahsin %25'i havuza
             commission = int(bet * 0.25)
             if commission > 0:
                 await _add_to_jackpot("blackjack", commission)
             jackpot_result += "|LOSE"
             
         elif pval == dval:
+            # Beraberlik: Bahsin %10'u havuza
             commission = int(bet * 0.10)
             if commission > 0:
                 await _add_to_jackpot("blackjack", commission)
             jackpot_result += "|PUSH"
             
         elif pval == 21:
+            # 21 yapan - JACKPOT DAĞIT (%15 kuralı ile)
             jackpot_amount = await _get_jackpot_amount("blackjack")
-            if jackpot_amount > JACKPOT_MINIMUM:
+            min_bet_for_jackpot = int(jackpot_amount * 0.15)
+            
+            if jackpot_amount > JACKPOT_MINIMUM and bet >= min_bet_for_jackpot:
                 total_win = bet + jackpot_amount
                 await add_balance(uid, total_win, "win", f"Blackjack JACKPOT! game:{game_id}")
                 await update_stats(uid, total_win)
@@ -287,6 +296,9 @@ async def _bj_dealer(ctx, chat_id, game_id):
                     f"━━━━━━━━━━━━━━━━━━━━━\n"
                     f"🆔 GAME ID: {game_id}\n"
                     f"🃏 Oyun: Blackjack (21)\n"
+                    f"💰 Havuz: {format_amount(jackpot_amount)}\n"
+                    f"🎯 Min. bahis: {format_amount(min_bet_for_jackpot)} (%15)\n"
+                    f"✅ Senin bahsin: {format_amount(bet)} (yeterli)\n"
                     f"💰 Havuz Payın: {format_amount(jackpot_amount)}\n"
                     f"🎁 Bahis İaden: {format_amount(bet)}\n"
                     f"💳 Toplam: {format_amount(total_win)}\n\n"
@@ -307,7 +319,7 @@ async def _bj_dealer(ctx, chat_id, game_id):
             jackpot_result += "|BLACKJACK"
         
         # ═══════════════════════════════════════════════════════
-        # NORMAL KAZANÇ/KAYIP
+        # NORMAL KAZANÇ/KAYIP İŞLEMLERİ
         # ═══════════════════════════════════════════════════════
         if p["state"] == "BUST":
             results.append(f"❌ {p['name']}: {pval} (BUST) → -{format_amount(bet)}")
