@@ -315,6 +315,14 @@ async def _bj_dealer(ctx, chat_id, game_id):
                 
                 await _reset_jackpot("blackjack")
                 logger.info(f"🃏 Blackjack JACKPOT dağıtıldı: {format_amount(jackpot_amount)}. Kazanan: {player_name}")
+                
+            elif jackpot_amount > JACKPOT_MINIMUM and bet < min_bet_for_jackpot:
+                # Bahis yetersiz açıklaması
+                results.append(f"⚠️ {p['name']}: 21 yaptı ama bahisi yetersiz!")
+                results.append(f"   💰 Havuz: {format_amount(jackpot_amount)}")
+                results.append(f"   🎯 Gerekli: {format_amount(min_bet_for_jackpot)} (%15)")
+                results.append(f"   ❌ Senin bahsin: {format_amount(bet)} (yetersiz)")
+                results.append(f"   ℹ️ Jackpot'u alamadın ama normal kazanç alacaksın")
             
             jackpot_result += "|BLACKJACK"
         
