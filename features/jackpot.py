@@ -199,6 +199,8 @@ async def cmd_jackpot(update, ctx):
     try:
         wheel_amount = await _get_jackpot_amount("wheel")
         blackjack_amount = await _get_jackpot_amount("blackjack")
+        min_wheel = int(wheel_amount * 0.15)
+        min_bj = int(blackjack_amount * 0.15)
         
         text = (
             f"🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥\n"
@@ -208,12 +210,17 @@ async def cmd_jackpot(update, ctx):
             f"═══════════════════════════════════\n"
             f"🔘 <b>HAVUZ:</b> <code>{format_amount(wheel_amount)}</code> 🪙BTK 💵💵\n"
             f"🔘 <b>JACKPOT ŞANSI:</b> %5\n"
-            f"🔘 PASS → HAVUZA EKLENİR\n\n"
+            f"🔘 PASS → HAVUZA EKLENİR\n"
+            f"🔘 İADE → %10 HAVUZA\n"
+            f"🔘 <b>KURAL:</b> Bahis ≥ Havuzun %15'i\n"
+            f"🔘 Min. bahis: <code>{format_amount(min_wheel)}</code>\n\n"
             f"✅ <b>🃏 BLACKJACK KRALLIĞI</b> ✅\n"
             f"═══════════════════════════════════\n"
             f"🔘 <b>HAVUZ:</b> <code>{format_amount(blackjack_amount)}</code> 🪙BTK 💵💵\n"
             f"🔘 21 YAPANA → JACKPOT\n"
-            f"🔘 BUST → HAVUZA EKLENİR\n\n"
+            f"🔘 BUST → HAVUZA EKLENİR\n"
+            f"🔘 <b>KURAL:</b> Bahis ≥ Havuzun %15'i\n"
+            f"🔘 Min. bahis: <code>{format_amount(min_bj)}</code>\n\n"
             f"   👑💰 <b>TAHT SENİ BEKLİYOR!</b> 💰👑"
         )
         
