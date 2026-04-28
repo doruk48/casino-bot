@@ -23,7 +23,26 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"🎮 Oyunlar için /menu",
         parse_mode="HTML"
     )
-
+async def cmd_changename(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    """İsim değiştir"""
+    user = update.effective_user
+    
+    if not ctx.args:
+        await update.message.reply_text("✏️ Kullanım: /changename <yeni isim>")
+        return
+    
+    name = " ".join(ctx.args)[:32]
+    if len(name) < 2:
+        await update.message.reply_text("❌ En az 2 karakter.")
+        return
+    
+    from core.database import get_db
+    db = await get_db()
+    await db.users.update_one(
+        {"telegram_id": user.id},
+        {"$set": {"display_name": name}}
+    )
+    await update.message.reply_text(f"✅ İsminiz <b>{name}</b> olarak güncellendi!", parse_mode="HTML")
 async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     help_text = (
         "🎰 <b>CASİNİBOT KOMUTLAR</b>\n"
