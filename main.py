@@ -4,6 +4,7 @@ import logging
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from features.help import cmd_start, cmd_help, cmd_changename
 
 # .env dosyasını yükle
 load_dotenv()
@@ -151,7 +152,7 @@ def main():
     app.add_handler(CommandHandler("moneys", cmd_moneys))
     app.add_handler(CommandHandler("menu", cmd_menu))
     app.add_handler(CommandHandler("id", cmd_id))
-    
+    app.add_handler(CommandHandler("changename", cmd_changename))
     # --- RULET ---
     app.add_handler(CommandHandler("rulet", cmd_rulet))
     app.add_handler(CommandHandler("red", cmd_red))
