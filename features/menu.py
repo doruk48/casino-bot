@@ -261,18 +261,19 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 parse_mode="HTML"
             )
         
+
     elif data == "menu_donate":
-    await query.edit_message_text(
-        "💝 <b>BOTA DESTEK OL</b>\n"
-        "━━━━━━━━━━━━━━━━━━━━━\n\n"
-        "🎰 Casinobot'u seviyor musun?\n"
-        "Gelişimine katkıda bulunmak ister misin?\n\n"
-        "✨ Bu tamamen <b>gönüllü bir bağıştır</b>.\n"
-        "🎁 Karşılığında <b>hiçbir şey almazsınız</b>.\n"
-        "❤️ Sadece teşekkür ve özel 'Destekçi' rozeti!\n\n"
-        "👇 /destek yazarak bağış yapabilirsin.",
-        reply_markup=InlineKeyboardMarkup(ana_menu_button),
-        parse_mode="HTML"
+        await query.edit_message_text(
+            "💝 <b>BOTA DESTEK OL</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "🎰 Casinobot'u seviyor musun?\n"
+            "Gelişimine katkıda bulunmak ister misin?\n\n"
+            "✨ Bu tamamen <b>gönüllü bir bağıştır</b>.\n"
+            "🎁 Karşılığında <b>hiçbir şey almazsınız</b>.\n"
+            "❤️ Sadece teşekkür ve özel 'Destekçi' rozeti!\n\n"
+            "👇 /destek yazarak bağış yapabilirsin.",
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
+            parse_mode="HTML"
     )
         
     elif data == "menu_help":
