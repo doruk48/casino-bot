@@ -39,7 +39,7 @@ async def cmd_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("🎁 GÜNLÜK BONUS", callback_data="menu_daily")
         ],
         [
-            InlineKeyboardButton("🌟 VIP KASA", callback_data="menu_buy"),
+            InlineKeyboardButton("💝 DESTEK OL", callback_data="menu_donate"),
             InlineKeyboardButton("❓ YARDIM", callback_data="menu_help")
         ]
     ]
@@ -261,23 +261,19 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 parse_mode="HTML"
             )
         
-    elif data == "menu_buy":
-        await query.edit_message_text(
-            "🌟 <b>VIP KASA</b>\n"
-            "━━━━━━━━━━━━━━━━━━━━━\n"
-            "Telegram Stars ile oyun parası satın al:\n\n"
-            "⭐ 10 Stars → 1.0M🪙BTK\n"
-            "⭐ 25 Stars → 50.0M🪙BTK\n"
-            "⭐ 50 Stars → 1.0B🪙BTK\n"
-            "⭐ 100 Stars → 10.0B🪙BTK\n"
-            "⭐ 250 Stars → 100.0B🪙BTK\n"
-            "⭐ 500 Stars → 1.0T🪙BTK\n"
-            "⭐ 1000 Stars → 10.0T🪙BTK\n\n"
-            "💡 /buy yazarak satın alabilirsiniz!\n"
-            "⚠️ Tamamen sanal oyun parasıdır, gerçek para değeri yoktur.",
-            reply_markup=InlineKeyboardMarkup(ana_menu_button),
-            parse_mode="HTML"
-        )
+    elif data == "menu_donate":
+    await query.edit_message_text(
+        "💝 <b>BOTA DESTEK OL</b>\n"
+        "━━━━━━━━━━━━━━━━━━━━━\n\n"
+        "🎰 Casinobot'u seviyor musun?\n"
+        "Gelişimine katkıda bulunmak ister misin?\n\n"
+        "✨ Bu tamamen <b>gönüllü bir bağıştır</b>.\n"
+        "🎁 Karşılığında <b>hiçbir şey almazsınız</b>.\n"
+        "❤️ Sadece teşekkür ve özel 'Destekçi' rozeti!\n\n"
+        "👇 /destek yazarak bağış yapabilirsin.",
+        reply_markup=InlineKeyboardMarkup(ana_menu_button),
+        parse_mode="HTML"
+    )
         
     elif data == "menu_help":
         await query.edit_message_text(
@@ -324,7 +320,7 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("🎁 GÜNLÜK BONUS", callback_data="menu_daily")
             ],
             [
-                InlineKeyboardButton("🌟 VIP KASA", callback_data="menu_buy"),
+                InlineKeyboardButton("💝 DESTEK OL", callback_data="menu_donate"),
                 InlineKeyboardButton("❓ YARDIM", callback_data="menu_help")
             ]
         ]
