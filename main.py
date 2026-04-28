@@ -30,7 +30,7 @@ from features.balance import cmd_balance
 from features.leaderboard_cmd import cmd_leaderboard
 from features.daily_cmd import cmd_daily
 from features.transfer import cmd_moneys
-from features.shop import cmd_buy, buy_callback, pre_checkout_callback, successful_payment_callback
+from features.shop import cmd_donate, donate_callback, pre_checkout_callback, successful_payment_callback
 from features.menu import cmd_menu, menu_callback
 from features.admin import cmd_id, cmd_addbalance, cmd_setbalance, cmd_cleanup, cmd_stats
 from features.jackpot import cmd_jackpot, process_jackpot_on_game_end
