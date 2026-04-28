@@ -179,12 +179,11 @@ def main():
     app.add_handler(CommandHandler("kazibet", cmd_kazibet))
     app.add_handler(CommandHandler("kazi", cmd_kazi))
     
-    # --- VIP KASA ---
-    app.add_handler(CommandHandler("buy", cmd_buy))
-    app.add_handler(CallbackQueryHandler(buy_callback, pattern=r"^buy_"))
+    # --- DESTEK OL ---
+    app.add_handler(CommandHandler("destek", cmd_donate))
+    app.add_handler(CallbackQueryHandler(donate_callback, pattern=r"^donate_"))
     app.add_handler(PreCheckoutQueryHandler(pre_checkout_callback))
     app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment_callback))
-    
     # --- ADMIN ---
     app.add_handler(CommandHandler("addbalance", cmd_addbalance))
     app.add_handler(CommandHandler("setbalance", cmd_setbalance))
