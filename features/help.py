@@ -1,5 +1,5 @@
 # features/help.py - Yardım ve Başlangıç Komutları
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
 from config import STARTING_BALANCE
@@ -20,9 +20,11 @@ async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         f"💳 Başlangıç bakiyeniz: {format_amount(u['balance'])}\n\n"
         f"🍀 Bol şans!\n"
         f"📌 Komutlar için /help\n"
-        f"🎮 Oyunlar için /menu",
+        f"🎮 Oyunlar için /menu\n\n"
+        f"🧛‍♂️ <b>YENİ!</b> Vampir Köylü oyunu için /whelp",
         parse_mode="HTML"
     )
+
 async def cmd_changename(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     """İsim değiştir"""
     user = update.effective_user
@@ -43,6 +45,7 @@ async def cmd_changename(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         {"$set": {"display_name": name}}
     )
     await update.message.reply_text(f"✅ İsminiz <b>{name}</b> olarak güncellendi!", parse_mode="HTML")
+
 async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     help_text = (
         "🎰 <b>CASİNİBOT KOMUTLAR</b>\n"
@@ -71,6 +74,11 @@ async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         "💰 <b>SATIN AL</b>\n"
         "/buy — Stars ile satın al\n\n"
         "🎰 <b>JACKPOT</b>\n"
-        "/jackpot — Havuzları gör"
+        "/jackpot — Havuzları gör\n\n"
+        "🧛‍♂️ <b>VAMPİR KÖYLÜ (YENİ!)</b>\n"
+        "/wstart — Grup oyunu başlat\n"
+        "/wjoin — Oyuna katıl\n"
+        "/whelp — Vampir komutları\n"
+        "/wnasiloynanir — Oyun kuralları"
     )
     await update.message.reply_text(help_text, parse_mode="HTML")
