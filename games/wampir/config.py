@@ -4,15 +4,19 @@ from enum import Enum
 # ═══════════════════════════════════════════════════════════════
 # GÖRSEL URL'leri
 # ═══════════════════════════════════════════════════════════════
+# games/vampir/config.py - GÖRSEL KISMI GÜNCELLENDİ
+
+RAW_BASE = "https://raw.githubusercontent.com/doruk48/casino-bot/main"
+
 IMAGES = {
-    "START": "https://images.unsplash.com/photo-1518709268805-4e9042af2176?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-    "VAMPIR_WIN": "https://st.depositphotos.com/1027404/3087/i/450/depositphotos_30878139-stock-photo-beautiful-vampire-and-her-victim.jpg",
-    "KOYLU_WIN": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-    "IBLIS_WIN": "https://st5.depositphotos.com/1001959/64677/i/450/depositphotos_646777630-stock-photo-studio-shot-five-prayers-esoteric.jpg",
-    "KURT": "https://pbs.twimg.com/media/GiAgM0hWYAEFfgf.jpg",
-    "ROMANTIC": "https://img-s2.onedio.com/id-546b32c7c46c6abd704a34e7/rev-0/w-1200/h-873/f-jpg/s-259ca65e27c07f0a0a0463447e878f58010b3b33.jpg",
-    "STEAMY": "https://st4.depositphotos.com/1022135/21314/i/450/depositphotos_213143798-stock-photo-young-man-waiting-sexy-woman.jpg",
-    "YARAMAZ_KIZ": "https://st4.depositphotos.com/1022135/21314/i/450/depositphotos_213143798-stock-photo-young-man-waiting-sexy-woman.jpg",
+    "START": f"{RAW_BASE}/start.jpg",
+    "VAMPIR_WIN": f"{RAW_BASE}/kotu_kazandi.jpg",
+    "KOYLU_WIN": f"{RAW_BASE}/koylu_kazandi.jpg",
+    "IBLIS_WIN": f"{RAW_BASE}/kotu_kazandi.jpg",        # İblis de kötü takım
+    "KURT": f"{RAW_BASE}/kurt_av.jpg",
+    "ROMANTIC": f"{RAW_BASE}/sapik_romantik.jpg",
+    "STEAMY": f"{RAW_BASE}/yaramaz_kiz.jpg",
+    "YARAMAZ_KIZ": f"{RAW_BASE}/yaramaz_kiz.jpg",
 }
 
 # ═══════════════════════════════════════════════════════════════
