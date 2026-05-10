@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 from features.help import cmd_start, cmd_help, cmd_changename
+from games.vampir.handlers import register_handlers as register_vampir_handlers
 
 # .env dosyasını yükle
 load_dotenv()
@@ -196,7 +197,8 @@ def main():
     
     # --- MENÜ ---
     app.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^menu_"))
-    
+    # --- VAMPİR KÖYLÜ ---
+    register_vampir_handlers(app)
     # --- HATA ---
     app.add_error_handler(error_handler)
     
