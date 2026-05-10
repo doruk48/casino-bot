@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from dotenv import load_dotenv
 from features.help import cmd_start, cmd_help, cmd_changename
-from games.vampir.handlers import register_handlers as register_vampir_handlers
+from games.vampir import register_handlers as register_vampir_handlers
 
 # .env dosyasını yükle
 load_dotenv()
