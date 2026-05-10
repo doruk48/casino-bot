@@ -1,4 +1,6 @@
 # main.py - Casinobot Pro | Ana Orkestra Şefi
+import sys, os
+sys.path.append("/app")
 import asyncio
 import logging
 import os
