@@ -43,6 +43,10 @@ async def cmd_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("💝 DESTEK OL", callback_data="menu_donate")
         ],
         [
+            InlineKeyboardButton("🎵 MÜZİK", callback_data="menu_music"),
+            InlineKeyboardButton("🧛 VAMPİR KÖYLÜ", callback_data="menu_vampir")
+        ],
+        [
             InlineKeyboardButton("❓ YARDIM", callback_data="menu_help")
         ]
     ]
@@ -293,7 +297,21 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 reply_markup=InlineKeyboardMarkup(ana_menu_button),
                 parse_mode="HTML"
             )
-        
+    elif data == "menu_music":
+        await query.edit_message_text(
+            "🎵 <b>MÜZİK KOMUTLARI</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "/play &lt;şarkı&gt; — Müzik başlat\n"
+            "/stop — Durdur\n"
+            "/skip — Atla\n"
+            "/queue — Sıra\n"
+            "/volume &lt;10-100&gt; — Ses\n"
+            "/current — Çalan şarkı\n\n"
+            "🎧 Sesli sohbette çalışır!",
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
+            parse_mode="HTML"
+        )
+      
     elif data == "menu_donate":
         await query.edit_message_text(
             "💝 <b>BOTA DESTEK OL</b>\n"
@@ -357,6 +375,10 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             [
                 InlineKeyboardButton("🎁 GÜNLÜK BONUS", callback_data="menu_daily"),
                 InlineKeyboardButton("💝 DESTEK OL", callback_data="menu_donate")
+            ],
+            [
+                InlineKeyboardButton("🎵 MÜZİK", callback_data="menu_music"),
+                InlineKeyboardButton("🧛 VAMPİR KÖYLÜ", callback_data="menu_vampir")
             ],
             [
                 InlineKeyboardButton("❓ YARDIM", callback_data="menu_help")
