@@ -1,14 +1,15 @@
-# games/vampir/handlers.py - Komut ve callback handler'ları (DÜZELTİLDİ)
+# games/vampir/handlers.py - Para sistemi ve /wstart <miktar> desteği
 import asyncio
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CommandHandler, CallbackQueryHandler, ContextTypes
 
 from games.vampir.engine import (
-    games, state_lock, get_game, GamePhase,
+    games, state_lock, get_game, GamePhase, IMAGES,
     send_msg, send_pm, join_btn, update_join_msg,
-    start_game, join_countdown, handle_night_act, handle_day_vote
+    start_game, join_countdown, handle_night_act, handle_day_vote,
 )
+from games.vampir.economy import format_money
 
 logger = logging.getLogger(__name__)
 _app = None
@@ -28,21 +29,54 @@ async def cmd_wstart(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         if game.is_active():
             return await update.message.reply_text("❌ Bu grupta zaten bir oyun devam ediyor!")
 
+        # 🆕 Giriş ücreti kontrolü
+        buy_in = 0  # Ücretsiz
+        if ctx.args:
+            arg = ctx.args[0].lower()
+            if arg == "allin":
+                # allin - oyuncular tüm bakiyeleriyle girer (sonra uygulanacak)
+                buy_in = 0  # Şimdilik ücretsiz
+            else:
+                try:
+                    buy_in = int(arg)
+                    if buy_in < 0:
+                        return await update.message.reply_text("❌ Geçersiz miktar!")
+                    if buy_in > 0 and buy_in < 1000:
+                        return await update.message.reply_text("❌ Minimum giriş: 1,000 🪙BTK")
+                except ValueError:
+                    return await update.message.reply_text("❌ Geçerli bir sayı girin!\nÖrnek: /wstart 1000000")
+
         game.reset()
         game.group_id = gid
         game.started_by = update.effective_user.id
         game.set_active(True)
+        game.buy_in = buy_in  # 🆕
 
-        msg = await ctx.bot.send_message(
-            chat_id=gid,
-            text=(
+        # Mesajı hazırla
+        if buy_in > 0:
+            start_msg = (
                 "🧛‍♂️ *Vampir Köylü Oyunu Başladı!*\n\n"
+                f"💰 *Giriş Ücreti:* {format_money(buy_in)}\n"
                 "👥 Aşağıdaki butona tıklayarak oyuna katılın!\n"
                 "⚡ En az 5 kişi gerekiyor.\n"
                 "⏰ 5. oyuncudan sonra 60 saniye bekleme süresi başlar.\n\n"
                 "🎮 *Katılan Oyuncular:*\n"
                 "Henüz kimse katılmadı..."
-            ),
+            )
+        else:
+            start_msg = (
+                "🧛‍♂️ *Vampir Köylü Oyunu Başladı!*\n\n"
+                "🎮 *Ücretsiz Oyun*\n"
+                "👥 Aşağıdaki butona tıklayarak oyuna katılın!\n"
+                "⚡ En az 5 kişi gerekiyor.\n"
+                "⏰ 5. oyuncudan sonra 60 saniye bekleme süresi başlar.\n\n"
+                "🎮 *Katılan Oyuncular:*\n"
+                "Henüz kimse katılmadı..."
+            )
+
+        msg = await ctx.bot.send_message(
+            chat_id=gid,
+            text=start_msg,
             reply_markup=join_btn(),
             parse_mode="Markdown"
         )
@@ -51,7 +85,7 @@ async def cmd_wstart(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         except:
             pass
         game.join_message_id = msg.message_id
-        logger.info(f"🎮 Grup {gid}: Oyun başlatıldı")
+        logger.info(f"🎮 Grup {gid}: Oyun başlatıldı | Giriş: {buy_in:,} BTK")
 
 
 async def cmd_wjoin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -69,10 +103,36 @@ async def cmd_wjoin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if u.id in game.players:
         return await update.message.reply_text("❌ Zaten oyundasınız!")
 
+    # 🆕 Paralı oyunda bakiye kontrolü
+    if game.buy_in > 0:
+        try:
+            from core.economy import get_balance, remove_balance
+            from core.users import get_or_create_user
+
+            await get_or_create_user(u.id, u.username, u.full_name)
+            bal = await get_balance(u.id)
+
+            if bal < game.buy_in:
+                return await update.message.reply_text(
+                    f"❌ Yetersiz bakiye!\n"
+                    f"💰 Giriş: {format_money(game.buy_in)}\n"
+                    f"💳 Bakiyen: {format_money(bal)}"
+                )
+        except Exception as e:
+            logger.error(f"Bakiye kontrol hatası: {e}")
+            return await update.message.reply_text("❌ Bakiye kontrolü yapılamadı!")
+
     # PM kontrolü
     try:
         test = await ctx.bot.send_message(u.id, "🔍 Kontrol ediliyor...")
         await ctx.bot.delete_message(chat_id=u.id, message_id=test.message_id)
+
+        # 🆕 Giriş ücretini tahsil et
+        if game.buy_in > 0:
+            try:
+                await remove_balance(u.id, game.buy_in, "vampir_giris", f"Vampir Köylü giriş")
+            except:
+                return await update.message.reply_text("❌ Giriş ücreti alınamadı!")
 
         game.add_player(u.id, u.first_name or u.username or "Bilinmeyen")
         await update.message.reply_text(f"✅ *{u.first_name}* oyuna katıldı! 🎉", parse_mode="Markdown")
@@ -96,6 +156,15 @@ async def cmd_wjoin(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             ]]),
             parse_mode="Markdown"
         )
+
+        # 🆕 Giriş ücreti iadesi
+        if game.buy_in > 0 and u.id in game.players:
+            try:
+                from core.economy import add_balance
+                await add_balance(u.id, game.buy_in, "vampir_iade", "Vampir Köylü giriş iadesi")
+                del game.players[u.id]
+            except:
+                pass
 
 
 async def cmd_wbaslat(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -124,8 +193,17 @@ async def cmd_wson(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != game.started_by:
         return await update.message.reply_text("❌ Sadece oyunu başlatan iptal edebilir!")
 
+    # 🆕 Ücret iadesi
+    if game.buy_in > 0 and game.phase == GamePhase.LOBBY:
+        try:
+            from core.economy import add_balance
+            for uid in game.players:
+                await add_balance(uid, game.buy_in, "vampir_iade", "Vampir Köylü iptal iadesi")
+        except Exception as e:
+            logger.error(f"İade hatası: {e}")
+
     game.reset()
-    await update.message.reply_text("🛑 Oyun iptal edildi!")
+    await update.message.reply_text("🛑 Oyun iptal edildi! Giriş ücretleri iade edildi.")
 
 
 async def cmd_wextend(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -171,7 +249,8 @@ async def cmd_whelp(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🧛‍♂️ *Vampir Köylü - Komutlar*\n\n"
         "🎮 *Oyun Yönetimi:*\n"
-        "• /wstart - Oyunu başlat\n"
+        "• /wstart - Ücretsiz oyun başlat\n"
+        "• /wstart <miktar> - Paralı oyun başlat\n"
         "• /wjoin - Oyuna katıl\n"
         "• /wbaslat - Oyunu hemen başlat\n"
         "• /wson - Oyunu iptal et\n"
@@ -188,12 +267,12 @@ async def cmd_wnasiloynanir(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🧛‍♂️ *Vampir Köylü - Nasıl Oynanır?*\n\n"
         "👥 En az 5 oyuncu ile oynanır.\n\n"
-        "🌙 *Gece:* Vampirler birini ısırır, Doktor birini korur, "
-        "Kurt birini avlar (sadece vampir), özel roller görev yapar.\n\n"
-        "☀️ *Gündüz:* 90 saniye tartışma, 30 saniye oylama. "
-        "En çok oy alan linç edilir.\n\n"
-        "🏆 *Kazanma:* Vampirler köylü sayısını geçerse kazanır. "
-        "Köylüler tüm vampirleri bulursa kazanır.\n"
+        "🎮 *Ücretsiz Oyun:* /wstart\n"
+        "💰 *Paralı Oyun:* /wstart <miktar>\n\n"
+        "🌙 *Gece:* Vampirler ısırır, Doktor korur, "
+        "Kurt avlar, Hırsız çalar, Bekçi korur...\n\n"
+        "☀️ *Gündüz:* 90 saniye tartışma, 30 saniye oylama.\n\n"
+        "🏆 *Kazanma:* Vampirler köylü sayısını geçerse kazanır.\n"
         "👹 İblis linç edilirse kötü takım kazanır!",
         parse_mode="Markdown"
     )
@@ -237,11 +316,36 @@ async def vampir_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         if u.id in game.players:
             return await q.answer("❌ Zaten oyundasınız!", show_alert=True)
 
+        # 🆕 Paralı oyunda bakiye kontrolü
+        if game.buy_in > 0:
+            try:
+                from core.economy import get_balance, remove_balance
+                from core.users import get_or_create_user
+
+                await get_or_create_user(u.id, u.username, u.full_name)
+                bal = await get_balance(u.id)
+
+                if bal < game.buy_in:
+                    return await q.answer(
+                        f"❌ Yetersiz bakiye! Giriş: {format_money(game.buy_in)} | Bakiyen: {format_money(bal)}",
+                        show_alert=True
+                    )
+            except:
+                return await q.answer("❌ Bakiye kontrolü yapılamadı!", show_alert=True)
+
+        # PM kontrolü
         try:
             test = await ctx.bot.send_message(u.id, "🔍 Kontrol...")
             await ctx.bot.delete_message(chat_id=u.id, message_id=test.message_id)
         except:
             return await q.answer("🤖 Önce bota /start yazın!", show_alert=True)
+
+        # 🆕 Giriş ücretini tahsil et
+        if game.buy_in > 0:
+            try:
+                await remove_balance(u.id, game.buy_in, "vampir_giris", "Vampir Köylü giriş")
+            except:
+                return await q.answer("❌ Giriş ücreti alınamadı!", show_alert=True)
 
         game.add_player(u.id, u.first_name or u.username or "?")
         await q.answer("🎉 Katıldınız!")
@@ -301,7 +405,7 @@ async def vampir_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         if game.phase == GamePhase.NIGHT:
             await handle_night_act(q, uid, tid, ctx, game, _app)
         else:
-            await handle_day_vote(q, uid, tid, ctx, game, _app)  # ✅ _app doğru geçiliyor
+            await handle_day_vote(q, uid, tid, ctx, game, _app)
 
 
 # ═══════════════════════════════════════════════════════════════
