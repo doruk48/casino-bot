@@ -204,7 +204,7 @@ def main():
     # --- VAMPİR KÖYLÜ ---
     register_vampir_handlers(app)
     # --- MÜZİK ---                          # ← EKLENEN
-    register_music_handlers(app)             # ← EKLENEN
+    #register_music_handlers(app)             # ← EKLENEN
     # --- HATA ---
     app.add_error_handler(error_handler)
     
