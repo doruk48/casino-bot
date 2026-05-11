@@ -743,17 +743,17 @@ async def end_game(ctx, game, app, winner=None):
         winning_team = "villagers"
 
     # 🆕 Ekonomi - oyun sonu hesaplama
-rewards = {}
-if game.economy and game.buy_in > 0:
-    # Kazanan takım üyelerini belirle
-    if winning_team == "evil":
-        winning_ids = [uid for uid, p in game.players.items()
-                      if "Vampir" in p.role or p.role == ROLES["IBLIS"]]
-    else:
-        winning_ids = [uid for uid, p in game.players.items()
-                      if "Vampir" not in p.role and p.role != ROLES["IBLIS"]]
-    
-    rewards = game.economy.get_final_rewards(winning_ids)
+    rewards = {}
+    if game.economy and game.buy_in > 0:
+        if winning_team == "evil":
+            winning_ids = [uid for uid, p in game.players.items()
+                          if "Vampir" in p.role or p.role == ROLES["IBLIS"]]
+        else:
+            winning_ids = [uid for uid, p in game.players.items()
+                          if "Vampir" not in p.role and p.role != ROLES["IBLIS"]]
+        
+        rewards = game.economy.get_final_rewards(winning_ids)
+
         # Gerçek bakiyeye ekle
         try:
             from core.economy import add_balance
@@ -761,9 +761,7 @@ if game.economy and game.buy_in > 0:
             for uid, amount in rewards.items():
                 if amount > 0:
                     await get_or_create_user(uid, game.players[uid].username, game.players[uid].username)
-                    net = amount - game.buy_in
-                    desc = "Vampir Köylü kazancı" if net >= 0 else "Vampir Köylü kaybı"
-                    await add_balance(uid, amount, "vampir_win", desc)
+                    await add_balance(uid, amount, "vampir_win", "Vampir Köylü kazancı")
         except Exception as e:
             logger.error(f"Gerçek bakiyeye ekleme hatası: {e}")
 
@@ -776,7 +774,8 @@ if game.economy and game.buy_in > 0:
         role_emoji = get_role_emoji(player.role)
 
         player_team = "evil" if ("Vampir" in player.role or player.role == ROLES["IBLIS"]) else "villagers"
-        if "Kurt" in player.role: player_team = "villagers"
+        if "Kurt" in player.role:
+            player_team = "villagers"
 
         results_text += f"{status_emoji} {player.username} - {role_emoji} {player.role}\n"
 
@@ -799,7 +798,8 @@ if game.economy and game.buy_in > 0:
     results_text += f"👥 Oyuncu: {total_players} | ❤️ {alive_count} | 💀 {dead_count}\n"
 
     if game.economy and game.buy_in > 0:
-        results_text += f"🏦 Havuz: {format_money(game.economy.good_treasury + game.economy.evil_treasury)}\n"
+        total_pool = game.economy.good_treasury + game.economy.evil_treasury
+        results_text += f"🏦 Havuz: {format_money(total_pool)}\n"
 
     if winning_team == "villagers":
         results_text += f"\n⭐ *Kazanan Köylü Takımı:*"
@@ -821,6 +821,8 @@ if game.economy and game.buy_in > 0:
             if player.user_id in rewards:
                 net = rewards[player.user_id] - game.buy_in
                 player_team = "evil" if ("Vampir" in player.role or player.role == ROLES["IBLIS"]) else "villagers"
+                if "Kurt" in player.role:
+                    player_team = "villagers"
                 won = player_team == winning_team
 
                 summary = f"🏆 *Oyun Bitti - {winner_text} Kazandı!*\n\n"
