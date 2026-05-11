@@ -8,6 +8,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from features.help import cmd_start, cmd_help, cmd_changename
 from games.vampir import register_handlers as register_vampir_handlers
+from modules.music.commands import register_handlers as register_music_handlers, init_player
 
 # .env dosyasını yükle
 load_dotenv()
@@ -68,6 +69,7 @@ async def post_init(app):
     await init_db()
     await cleanup_stuck_games()
     asyncio.create_task(backup_task())
+    asyncio.create_task(init_player(app))
     logger.info("🎰 CasiniBot-Pro başlatıldı!")
     logger.info(f"📁 BASE_DIR: {BASE_DIR}")
     logger.info(f"💾 Veritabanı: {DATABASE_NAME}")
@@ -201,6 +203,8 @@ def main():
     app.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^menu_"))
     # --- VAMPİR KÖYLÜ ---
     register_vampir_handlers(app)
+    # --- MÜZİK ---                          # ← EKLENEN
+    register_music_handlers(app)             # ← EKLENEN
     # --- HATA ---
     app.add_error_handler(error_handler)
     
