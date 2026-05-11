@@ -2,9 +2,8 @@
 import asyncio
 import logging
 from typing import Optional, Dict
-from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioFile, AudioParameters
-
+from py_tgcalls import PyTgCalls
+from py_tgcalls.types import AudioFile, AudioParameters
 logger = logging.getLogger(__name__)
 
 class MusicPlayer:
