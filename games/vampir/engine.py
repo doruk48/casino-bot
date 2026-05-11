@@ -743,18 +743,17 @@ async def end_game(ctx, game, app, winner=None):
         winning_team = "villagers"
 
     # 🆕 Ekonomi - oyun sonu hesaplama
-    rewards = {}
-    if game.economy and game.buy_in > 0:
-        # Kazanan takım üyelerini belirle
+rewards = {}
+if game.economy and game.buy_in > 0:
+    # Kazanan takım üyelerini belirle
+    if winning_team == "evil":
         winning_ids = [uid for uid, p in game.players.items()
-                      if ("Vampir" in p.role or p.role == ROLES["IBLIS"]) if winning_team == "evil"
-                      else ("Vampir" not in p.role and p.role != ROLES["IBLIS"])]
-        if winning_team == "villagers":
-            winning_ids = [uid for uid, p in game.players.items()
-                          if "Vampir" not in p.role and p.role != ROLES["IBLIS"]]
-        
-        rewards = game.economy.get_final_rewards(winning_ids)
-
+                      if "Vampir" in p.role or p.role == ROLES["IBLIS"]]
+    else:
+        winning_ids = [uid for uid, p in game.players.items()
+                      if "Vampir" not in p.role and p.role != ROLES["IBLIS"]]
+    
+    rewards = game.economy.get_final_rewards(winning_ids)
         # Gerçek bakiyeye ekle
         try:
             from core.economy import add_balance
