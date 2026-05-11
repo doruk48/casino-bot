@@ -69,7 +69,7 @@ async def post_init(app):
     await init_db()
     await cleanup_stuck_games()
     asyncio.create_task(backup_task())
-    asyncio.create_task(init_player(app))
+    #asyncio.create_task(init_player(app))
     logger.info("🎰 CasiniBot-Pro başlatıldı!")
     logger.info(f"📁 BASE_DIR: {BASE_DIR}")
     logger.info(f"💾 Veritabanı: {DATABASE_NAME}")
