@@ -1,9 +1,14 @@
-# modules/music/player.py - TEMİZ HALİ
+# modules/music/player.py - py-tgcalls İÇİN GÜNCELLENDİ
 import asyncio
 import logging
 from typing import Optional, Dict
-from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioPiped, AudioParameters
+
+# Yeni importlar
+from py_tgcalls import PyTgCalls
+from py_tgcalls.types import AudioPiped, AudioParameters
+
+logger = logging.getLogger(__name__)
+
 class MusicPlayer:
     def __init__(self, app):
         self.app = app
@@ -16,11 +21,16 @@ class MusicPlayer:
     async def start(self):
         if self._ready:
             return
+        
+        # PyTgCalls başlatma
         self.call_client = PyTgCalls(self.app)
         await self.call_client.start()
+        
         self._ready = True
-        logger.info("🎵 Müzik motoru başlatıldı")
+        logger.info("🎵 Müzik motoru (py-tgcalls) başlatıldı")
     
+    # ... (stop, play, stop_chat, is_playing, get_current metodları aynı kalacak)
+    # Sadece play metodunda AudioPiped kullanmaya devam edin.
     async def stop(self):
         if self.call_client:
             for chat_id in list(self.active_calls.keys()):
