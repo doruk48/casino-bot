@@ -4,6 +4,6 @@ pillow==10.4.0
 pymongo==4.6.0
 dnspython==2.4.2
 python-dotenv==1.0.0
-pyrogram
-pytgcalls
-yt-dlp
+pyrogram>=2.0.0
+py-tgcalls>=2.0.0
+yt-dlp>=2024.0.0
