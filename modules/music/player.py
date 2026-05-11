@@ -4,7 +4,7 @@ import os
 import logging
 from typing import Optional, Dict
 from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioPiped, AudioParameters
+from pytgcalls.types import AudioFile, AudioParameters
 
 logger = logging.getLogger(__name__)
 
