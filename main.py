@@ -202,6 +202,9 @@ def main():
     app.add_handler(CallbackQueryHandler(menu_callback, pattern=r"^menu_"))
     # --- VAMPİR KÖYLÜ ---
     register_vampir_handlers(app)
+
+    # --- CODENAMES ---
+    register_codenames(app)
     # --- HATA ---
     app.add_error_handler(error_handler)
     
