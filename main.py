@@ -8,7 +8,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from features.help import cmd_start, cmd_help, cmd_changename
 from games.vampir import register_handlers as register_vampir_handlers
-
+from games.codenames import register_handlers as register_codenames
 
 # .env dosyasını yükle
 load_dotenv()
