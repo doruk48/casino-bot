@@ -7,4 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
-CMD ["python", "main.py"]
+# Render'ın botu kapatmasını engelle
+ENV PYTHONUNBUFFERED=1
+
+CMD ["python", "-u", "main.py"]
