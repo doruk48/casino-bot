@@ -69,10 +69,11 @@ async def post_init(app):
     await init_db()
     await cleanup_stuck_games()
     asyncio.create_task(backup_task())
+    asyncio.create_task(keep_alive(app))  # ← BU SATIRI EKLE
     logger.info("🎰 CasiniBot-Pro başlatıldı!")
     logger.info(f"📁 BASE_DIR: {BASE_DIR}")
     logger.info(f"💾 Veritabanı: {DATABASE_NAME}")
-
+    
 async def post_shutdown(app):
     from core.database import _mongo_client
     if _mongo_client:
@@ -130,7 +131,24 @@ async def error_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             await ctx.bot.send_message(update.effective_chat.id, "❌ Bir hata oluştu. Lütfen tekrar deneyin.")
     except:
         pass
+# ═══════════════════════════════════════════════════════════════
+#  KEEP-ALIVE (Render Uyku Modunu Engelleme)
+# ═══════════════════════════════════════════════════════════════
 
+KEEP_ALIVE_CHAT_ID = -1002587811275
+
+async def keep_alive(app):
+    """Her 2 dakikada bir gizli gruba nokta atıp siler, Render'ı uyanık tutar."""
+    await asyncio.sleep(30)  # Bot tamamen başlasın
+    while True:
+        try:
+            msg = await app.bot.send_message(KEEP_ALIVE_CHAT_ID, ".")
+            await asyncio.sleep(3)
+            await app.bot.delete_message(KEEP_ALIVE_CHAT_ID, msg.message_id)
+            logger.info("🔄 Keep-alive: ping")
+        except Exception as e:
+            logger.warning(f"Keep-alive hatası: {e}")
+        await asyncio.sleep(115)  # ~2 dakika
 # ═══════════════════════════════════════════════════════════════
 #  MAIN
 # ═══════════════════════════════════════════════════════════════
