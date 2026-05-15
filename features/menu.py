@@ -1,4 +1,4 @@
-# features/menu.py - Menü Sistemi (VAMPIR EKLENDI)
+# features/menu.py - Menü Sistemi (CODENAMES EKLENDI)
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from bson.decimal128 import Decimal128
@@ -35,16 +35,16 @@ async def cmd_menu(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("🧛 VAMPİR KÖYLÜ", callback_data="menu_vampir")
         ],
         [
+            InlineKeyboardButton("🕵️ CODENAMES", callback_data="menu_codenames"),
+            InlineKeyboardButton("🎵 MÜZİK", callback_data="menu_music")
+        ],
+        [
             InlineKeyboardButton("💰 BAKİYE", callback_data="menu_balance"),
             InlineKeyboardButton("🏆 LİDERLİK", callback_data="menu_leaderboard")
         ],
         [
             InlineKeyboardButton("🎁 GÜNLÜK BONUS", callback_data="menu_daily"),
             InlineKeyboardButton("💝 DESTEK OL", callback_data="menu_donate")
-        ],
-        [
-            InlineKeyboardButton("🎵 MÜZİK", callback_data="menu_music"),
-            InlineKeyboardButton("🧛 VAMPİR KÖYLÜ", callback_data="menu_vampir")
         ],
         [
             InlineKeyboardButton("❓ YARDIM", callback_data="menu_help")
@@ -156,7 +156,7 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML"
         )
     
-    # ===== YENİ: VAMPİR KÖYLÜ MENÜSÜ =====
+    # ===== VAMPİR KÖYLÜ MENÜSÜ =====
     elif data == "menu_vampir":
         await query.edit_message_text(
             "🧛‍♂️ <b>VAMPİR KÖYLÜ NASIL OYNANIR?</b>\n"
@@ -182,6 +182,30 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "• 👨‍🌾 Köylüler: Tüm vampirleri bul\n"
             "• 👹 İblis linç edilirse kötüler kazanır!\n\n"
             "📖 Komutlar için /whelp",
+            reply_markup=InlineKeyboardMarkup(ana_menu_button),
+            parse_mode="HTML"
+        )
+    
+    # ===== CODENAMES MENÜSÜ =====
+    elif data == "menu_codenames":
+        await query.edit_message_text(
+            "🕵️ <b>CODENAMES NASIL OYNANIR?</b>\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "👥 <b>Grup oyunudur!</b> En az 4 kişi gerekir.\n\n"
+            "🎮 <b>BAŞLATMA:</b>\n"
+            "1️⃣ Gruba /cstart yazın\n"
+            "2️⃣ /cjoin veya butonla katılın\n"
+            "3️⃣ /ckaptan mavi|kirmizi ile kaptanlar seçilsin\n"
+            "4️⃣ Kaptanlar /csec ile takım kursun\n"
+            "5️⃣ /csozcu ile sözcüler seçilsin\n\n"
+            "🎯 <b>OYUN:</b>\n"
+            "• Kaptan DM'den /cipucu kelime sayı yazar\n"
+            "• Sözcü /ctahmin kelime ile tahmin yapar\n"
+            "• /cpas ile pas verilir\n\n"
+            "🏆 <b>KAZANMA:</b>\n"
+            "• Kendi rengindeki tüm kelimeleri açan kazanır\n"
+            "• Suikastçıyı açan takım kaybeder!\n\n"
+            "📖 Komutlar için /chelp",
             reply_markup=InlineKeyboardMarkup(ana_menu_button),
             parse_mode="HTML"
         )
@@ -344,6 +368,8 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             "/blackjack, /bj\n\n"
             "🧛‍♂️ <b>VAMPİR KÖYLÜ (GRUP)</b>\n"
             "/wstart, /wjoin, /whelp, /wnasiloynanir\n\n"
+            "🕵️ <b>CODENAMES (GRUP)</b>\n"
+            "/cstart, /cjoin, /chelp\n\n"
             "🌟 <b>VIP KASA</b>\n"
             "/buy\n\n"
             "🎰 <b>JACKPOT</b>\n"
@@ -369,16 +395,16 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
                 InlineKeyboardButton("🧛 VAMPİR KÖYLÜ", callback_data="menu_vampir")
             ],
             [
+                InlineKeyboardButton("🕵️ CODENAMES", callback_data="menu_codenames"),
+                InlineKeyboardButton("🎵 MÜZİK", callback_data="menu_music")
+            ],
+            [
                 InlineKeyboardButton("💰 BAKİYE", callback_data="menu_balance"),
                 InlineKeyboardButton("🏆 LİDERLİK", callback_data="menu_leaderboard")
             ],
             [
                 InlineKeyboardButton("🎁 GÜNLÜK BONUS", callback_data="menu_daily"),
                 InlineKeyboardButton("💝 DESTEK OL", callback_data="menu_donate")
-            ],
-            [
-                InlineKeyboardButton("🎵 MÜZİK", callback_data="menu_music"),
-                InlineKeyboardButton("🧛 VAMPİR KÖYLÜ", callback_data="menu_vampir")
             ],
             [
                 InlineKeyboardButton("❓ YARDIM", callback_data="menu_help")
@@ -392,4 +418,4 @@ async def menu_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"Bir oyun seçin veya bilgi almak için butonlara tıklayın:",
             reply_markup=InlineKeyboardMarkup(main_keyboard),
             parse_mode="HTML"
-        )
+            )
