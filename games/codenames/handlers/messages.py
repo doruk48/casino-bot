@@ -18,7 +18,7 @@ def build_lobby_keyboard(game: GameRoom) -> InlineKeyboardMarkup:
     buttons.append([
         InlineKeyboardButton(
             "🤖 PM'ye Git (Botu Başlat)",
-            url="https://t.me/BOT_KULLANICI_ADIN"  # ⚠️ Kendi bot adresinle değiştir
+            url="https://t.me/GameShopTrbot"  # ⚠️ Kendi bot adresinle değiştir
         )
     ])
 
