@@ -2,6 +2,7 @@
 Lobi, takım listesi ve buton mesaj şablonları.
 """
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ParseMode
 from ..engine import GameRoom, TeamColor
 
 
@@ -9,21 +10,18 @@ def build_lobby_keyboard(game: GameRoom) -> InlineKeyboardMarkup:
     """Lobi mesajı için butonları oluştur."""
     buttons = []
 
-    # Katıl butonu (max 12 oyuncu)
     if len(game.players) < 12:
         buttons.append([
             InlineKeyboardButton("➕ Katıl", callback_data="c_join")
         ])
 
-    # DM başlatma butonu (botun kullanıcı adı dinamik olmalı)
     buttons.append([
         InlineKeyboardButton(
             "🤖 PM'ye Git (Botu Başlat)",
-            url="https://t.me/CodenamesBot"  # ⚠️ Kendi bot adresinle değiştir
+            url="https://t.me/BOT_KULLANICI_ADIN"  # ⚠️ Kendi bot adresinle değiştir
         )
     ])
 
-    # Başlat ve İptal butonları (sadece oyun sahibi kullanabilir, callback'te kontrol edilir)
     buttons.append([
         InlineKeyboardButton("🚀 Oyunu Başlat", callback_data="c_start_game"),
         InlineKeyboardButton("❌ İptal", callback_data="c_cancel")
@@ -63,7 +61,6 @@ def build_team_selection_text(game: GameRoom) -> str:
     """Oyuncu seçimi aşaması mesajı."""
     text = "🔄 <b>OYUNCU SEÇİMİ</b>\n\n"
 
-    # Mavi takım
     text += "🔵 <b>Mavi Takım</b>\n"
     text += f"Kaptan: {game.get_mention(game.blue_captain)}\n"
     for i, uid in enumerate(game.blue_players, 1):
@@ -125,10 +122,25 @@ def build_clue_announcement(game: GameRoom) -> str:
 def build_guess_info(game: GameRoom) -> str:
     """Tahmin aşaması bilgilendirme."""
     team = game.current_turn.value if game.current_turn else ""
+    spokes = game.blue_spokesperson if game.current_turn == TeamColor.BLUE else game.red_spokesperson
     return (
-        f"🤔 <b>{team.upper()} TAKIM — TAİHMİN ZAMANI</b>\n"
+        f"🤔 <b>{team.upper()} TAKIM — TAHMİN ZAMANI</b>\n"
         f"İpucu: <b>{game.clue_word.upper()}</b> ({game.clue_number})\n"
         f"Kalan tahmin hakkı: <b>{game.guesses_remaining}</b>\n\n"
-        f"🎤 Sözcü {game.get_mention(game.blue_spokesperson if game.current_turn == TeamColor.BLUE else game.red_spokesperson)} "
-        f"/ctahmin kelime ile tahmin yapsın."
-              )
+        f"🎤 Sözcü {game.get_mention(spokes)} /ctahmin kelime ile tahmin yapsın."
+    )
+
+
+async def update_lobby_message(game: GameRoom, context):
+    """Lobi mesajını günceller (eski mesajı düzenler)."""
+    if game.lobby_msg_id:
+        try:
+            await context.bot.edit_message_text(
+                chat_id=game.chat_id,
+                message_id=game.lobby_msg_id,
+                text=build_lobby_text(game),
+                reply_markup=build_lobby_keyboard(game),
+                parse_mode=ParseMode.HTML
+            )
+        except Exception:
+            pass  # Mesaj silinmiş veya değişmemiş olabilir
