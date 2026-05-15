@@ -1,4 +1,5 @@
 import random
+import string
 import asyncio
 from enum import Enum
 from dataclasses import dataclass, field
@@ -181,7 +182,17 @@ def load_word_pool() -> list:
         "uyku", "rüya", "hayal", "ışık", "ayna", "pencere", "duvar"
     ]
 
+# ═══════════════════════════════════════════════════════════════
+#  YARDIMCI FONKSİYONLAR
+# ═══════════════════════════════════════════════════════════════
 
+def generate_game_id() -> str:
+    """6 haneli benzersiz oyun ID'si üretir."""
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+
+def load_word_pool() -> list:
+    # ... mevcut kod ...
 # ═══════════════════════════════════════════════════════════════
 #  AKTİF OYUN YÖNETİMİ (Thread-safe)
 # ═══════════════════════════════════════════════════════════════
