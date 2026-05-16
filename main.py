@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from features.help import cmd_start, cmd_help, cmd_changename
 from games.vampir import register_handlers as register_vampir_handlers
 from games.codenames import register_handlers as register_codenames
+from telegram.request import HTTPXRequest
+
 
 # .env dosyasını yükle
 load_dotenv()
@@ -160,6 +162,7 @@ def main():
     app = (
         Application.builder()
         .token(BOT_TOKEN)
+        .proxy("http://proxy.server:3128")
         .post_init(post_init)
         .post_shutdown(post_shutdown)
         .build()
@@ -225,12 +228,8 @@ def main():
     register_codenames(app)
     # --- HATA ---
     app.add_error_handler(error_handler)
-    # PythonAnywhere proxy ayarı
-    from telegram.request import HTTPXRequest
+    
 
-    # PythonAnywhere'in izin verdiği proxy (ücretsiz hesap için)
-    request = HTTPXRequest(proxy_url="http://proxy.server:3128")
-    app.bot.request = request
 
 
     
