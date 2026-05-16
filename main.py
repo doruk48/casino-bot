@@ -225,6 +225,14 @@ def main():
     register_codenames(app)
     # --- HATA ---
     app.add_error_handler(error_handler)
+    # PythonAnywhere proxy ayarı
+    from telegram.request import HTTPXRequest
+
+    # PythonAnywhere'in izin verdiği proxy (ücretsiz hesap için)
+    request = HTTPXRequest(proxy_url="http://proxy.server:3128")
+    app.bot.request = request
+
+
     
     logger.info("🚀 Handler'lar yüklendi. Polling başlıyor...")
     app.run_polling(
